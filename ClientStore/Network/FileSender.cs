@@ -27,36 +27,49 @@ namespace ClientStore.Network
             _fileIndex = fileIndex;
         }
 
-        public async Task SendFileAsync(Guid sessionId, Guid userId, FileDescriptor fd, FileType fileType)
+        public async Task<bool> SendFileAsync(Guid sessionId, Guid userId, FileDescriptor fd, FileType fileType)
         {
             using (FileStream fileStream = _fileIndex.StreamCompletedFile(sessionId, fd, fileType))
             using (TcpClient client = new TcpClient())
             {
-                await client.ConnectAsync(_host, _port);
-
-                NetworkStream networkStream = client.GetStream();
-                StreamWriter sw = new StreamWriter(networkStream);
-
-                ulong fileSize = (ulong)fileStream.Length;
-
-                await sendFileMetadata(sessionId, fd, fileType, fileSize, sw);
-
-                byte[] buffer = new byte[1024];
-                int amtRead = 1;
-                while(amtRead != 0)
+                try
                 {
-                    amtRead = await fileStream.ReadAsync(buffer, 0, buffer.Length);
-                    if (amtRead == 0)
-                        break;
+                    await client.ConnectAsync(_host, _port);
 
-                    await networkStream.WriteAsync(buffer, 0, amtRead);
+                    NetworkStream networkStream = client.GetStream();
+                    StreamWriter sw = new StreamWriter(networkStream);
+
+                    ulong fileSize = (ulong)fileStream.Length;
+
+                    await sendFileMetadata(sessionId, fd, fileType, fileSize, sw);
+                    await sendBytesFileAsync(networkStream, fileStream);
+                    return true;
+                }
+                catch (Exception)
+                {
+                    return false;
                 }
             }
         }
 
+        private async Task sendBytesFileAsync(NetworkStream networkStream, FileStream fileStream)
+        {
+            byte[] buffer = new byte[1024];
+            int amtRead = 1;
+            while (amtRead != 0)
+            {
+                amtRead = await fileStream.ReadAsync(buffer, 0, buffer.Length);
+                if (amtRead == 0)
+                    break;
+
+                await networkStream.WriteAsync(buffer, 0, amtRead);
+            }
+
+        }
+
         private async Task sendFileMetadata(Guid sessionId, FileDescriptor fd, FileType fileType, ulong fileLength, StreamWriter writer)
         {
-            var metadata = new FileMetadata(sessionId, fd, fileType, fileLength);
+            var metadata = new FilePutRequest(sessionId, fd, fileType, fileLength);
             string metadataJson = SerializeUtil.SerializeObject(metadata);
             await writer.WriteLineAsync(metadataJson);
             await writer.FlushAsync();

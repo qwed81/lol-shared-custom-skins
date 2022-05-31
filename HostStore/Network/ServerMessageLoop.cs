@@ -10,12 +10,12 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ClientStore.Network
+namespace HostStore.Network
 {
 
-    internal delegate void MessageHandler(MessageLoop sender, Type messageType, object message);
+    internal delegate void MessageHandler(ServerMessageLoop sender, Type messageType, object message);
 
-    internal class MessageLoop : IDisposable
+    internal class ServerMessageLoop : IDisposable
     {
 
         private bool _canceled;
@@ -23,39 +23,21 @@ namespace ClientStore.Network
         private StreamWriter _writer;
         private StreamReader _reader;
 
-        public Guid SessionId { get; private set; }
+        public Guid SessionId { get; }
 
-        public Guid UserId { get; private set; }
+        public Guid UserId { get; }
 
         public event MessageHandler? OnMessage;
 
-        private MessageLoop(TcpClient client, StreamWriter writer, StreamReader reader)
+        public ServerMessageLoop(Guid sessionId, Guid userId, TcpClient client)
         {
+            SessionId = sessionId;
+            UserId = userId;
+
             _canceled = false;
             _tcpClient = client;
-            _writer = writer;
-            _reader = reader;
-        }
-
-        public static async Task<MessageLoop> ConnectLoopAsync(string host, int port, Guid requestSessionId,
-            bool admin, string password, UserInfo initUserInfo)
-        {
-            TcpClient client = new TcpClient();
-            try
-            {
-                await client.ConnectAsync(host, port);
-                var reader = new StreamReader(client.GetStream());
-                var writer = new StreamWriter(client.GetStream());
-
-                var messageLoop = new MessageLoop(client, writer, reader);
-                await messageLoop.authenticateAsync(requestSessionId, admin, password, initUserInfo);
-
-                return messageLoop;
-            }
-            finally // if an error occurs with connection, still close the client
-            {
-                client.Close();
-            }
+            _reader = new StreamReader(client.GetStream());
+            _writer = new StreamWriter(client.GetStream());
         }
 
         public async Task<Exception> ProcessUntilClosedAsync()
@@ -67,7 +49,7 @@ namespace ClientStore.Network
                     var (type, message) = await readMessageAsync();
                     OnMessage?.Invoke(this, type, message);
                 }
-            } 
+            }
             catch (Exception ex)
             {
                 return ex;
@@ -103,24 +85,6 @@ namespace ClientStore.Network
 
             await writeObjectAsync(metadata);
             await writeObjectAsync(message);
-        }
-
-        private async Task authenticateAsync(Guid sessionId, bool admin, string password, UserInfo initUserInfo)
-        {
-            // send auth info
-            var authInfo = new ClientAuthenticationInfo(sessionId, admin, password, initUserInfo);
-            await writeObjectAsync(authInfo);
-
-            // recive auth response
-            var authResponse = (await readObjectAsync(typeof(ServerAuthenticationResponse)) as ServerAuthenticationResponse);
-            if (authResponse == null)
-                throw new Exception("Server did not send proper authentication response");
-
-            if (authResponse.Success != true)
-                throw new Exception($"Authentication failed, reason: {authResponse.FailureReason!}");
-
-            SessionId = authResponse.SessionId;
-            UserId = authResponse.UserId;
         }
 
         private async Task writeObjectAsync(object obj)

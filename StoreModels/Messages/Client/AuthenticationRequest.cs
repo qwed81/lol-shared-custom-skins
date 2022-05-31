@@ -4,7 +4,7 @@ using System.Text;
 
 namespace StoreModels.Messages.Client
 {
-    public class ClientAuthenticationInfo
+    public class AuthenticationRequest : ClientRequest
     {
 
         public Guid SessionRequestId { get; set; }
@@ -15,7 +15,8 @@ namespace StoreModels.Messages.Client
 
         public UserInfo InitialUserInfo { get; set; }
 
-        public ClientAuthenticationInfo(Guid sessionRequestId, bool admin, string password, UserInfo initUserInfo)
+        public AuthenticationRequest(Guid sessionRequestId, bool admin, string password, 
+            UserInfo initUserInfo) : base(RequestType.MESSAGE_LOOP)
         {
             SessionRequestId = sessionRequestId;
             Admin = admin;

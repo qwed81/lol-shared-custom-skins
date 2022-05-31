@@ -4,7 +4,7 @@ using System.Text;
 
 namespace StoreModels.Messages.Client
 {
-    public class FileMetadata
+    public class FilePutRequest : ClientRequest
     {
 
         public Guid SessionId { get; set; }
@@ -15,7 +15,8 @@ namespace StoreModels.Messages.Client
 
         public ulong FileLength { get; set; }
 
-        public FileMetadata(Guid sessionId, FileDescriptor fd, FileType fileType, ulong fileLength)
+        public FilePutRequest(Guid sessionId, FileDescriptor fd, FileType fileType, 
+            ulong fileLength) : base(RequestType.FILE_SEND)
         {
             SessionId = sessionId;
             FileDescriptor = fd;

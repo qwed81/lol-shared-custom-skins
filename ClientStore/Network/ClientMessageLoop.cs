@@ -1,10 +1,8 @@
-﻿/*
-using Newtonsoft.Json;
+﻿using StoreModels;
 using StoreModels.Messages;
 using StoreModels.Messages.Client;
 using StoreModels.Messages.Server;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
@@ -15,168 +13,130 @@ using System.Threading.Tasks;
 namespace ClientStore.Network
 {
 
-    internal class MessageRecievedEventArgs 
-    {
-
-        public Guid SessionId { get; set; }
-
-        public Guid UserId { get; set; }
-
-        public Type MessageType { get; set; }
-
-        public object Message { get; set; }
-
-        public MessageRecievedEventArgs(Guid sessionid, Guid userId, Type messageType, object message)
-        {
-            SessionId = sessionid;
-            UserId = userId;
-            MessageType = messageType;
-            Message = message;
-        }
-
-    }
+    internal delegate void MessageHandler(ClientMessageLoop sender, Type messageType, object message);
 
     internal class ClientMessageLoop : IDisposable
     {
 
-        private readonly string _host;
-        private readonly int _port;
-        private ConcurrentQueue<object> _outboundMessageQueue;
-        private StreamWriter? _streamWriter;
-        private bool _isRunning;
+        private bool _canceled;
+        private TcpClient _tcpClient;
+        private StreamWriter _writer;
+        private StreamReader _reader;
 
         public Guid SessionId { get; private set; }
 
         public Guid UserId { get; private set; }
 
-        public bool IsConnected { get; private set; }
+        public event MessageHandler? OnMessage;
 
-        public bool HeadersSet { get; private set; }
-
-        public event EventHandler<MessageRecievedEventArgs>? MessageRecived;
-
-        public ClientMessageLoop(string host, int port)
+        private ClientMessageLoop(TcpClient client)
         {
-            _host = host;
-            _port = port;
-            _outboundMessageQueue = new ConcurrentQueue<object>();
-            
+            _canceled = false;
+            _tcpClient = client;
+            _reader = new StreamReader(client.GetStream());
+            _writer = new StreamWriter(client.GetStream());
         }
 
-        public void Start()
+        public static async Task<ClientMessageLoop> ConnectLoopAsync(string host, int port, Guid requestSessionId,
+            bool admin, string password, UserInfo initUserInfo)
         {
-            _isRunning = true;
-            Task.Run(startOnThread); // runs the message handler thread
-        }
-
-        private async Task startOnThread()
-        {
-            while(_isRunning)
+            TcpClient client = new TcpClient();
+            try
             {
-                try
+                await client.ConnectAsync(host, port);
+
+                var messageLoop = new ClientMessageLoop(client);
+                await messageLoop.authenticateAsync(requestSessionId, admin, password, initUserInfo);
+
+                return messageLoop;
+            }
+            finally // if an error occurs with connection, still close the client
+            {
+                client.Close();
+            }
+        }
+
+        public async Task<Exception> ProcessUntilClosedAsync()
+        {
+            try
+            {
+                while (_canceled == false)
                 {
-                    await connectAsync();
-                    IsConnected = false;
+                    var (type, message) = await readMessageAsync();
+                    OnMessage?.Invoke(this, type, message);
                 }
-                catch (Exception)
-                {
-                    IsConnected = false;
-                    await Task.Delay(1000);
-                }
-                
+            } 
+            catch (Exception ex)
+            {
+                return ex;
             }
 
+            return new Exception("Closed manually");
         }
 
-        public void PostMessage(object message) 
+        private async Task<(Type, object)> readMessageAsync()
         {
+            var metadata = await readObjectAsync(typeof(ServerMessageMetadata)) as ServerMessageMetadata;
+            if (metadata == null)
+                throw new Exception("Invalid message from server");
+
+            Type? messageType = SerializeUtil.StringToType(metadata.MessageType);
+            if (messageType == null)
+                throw new Exception("Invalid message type");
+
+            object? message = await readObjectAsync(messageType);
             if (message == null)
-                throw new ArgumentException("message is null");
+                throw new Exception("Invalid message from server");
 
-            _outboundMessageQueue.Enqueue(message);
-
-            if (IsConnected)
-                Task.Run(sendAllPostedMessages); // sends messages on a new thread
+            return (messageType, message);
         }
 
-        public void Stop()
+        public async Task PostMessageAsync(Type messageType, object message)
         {
-            _isRunning = false;
+            string messageTypeStr = SerializeUtil.TypeToString(messageType);
+            var metadata = new ClientMessageMetadata(SessionId, UserId, Guid.NewGuid(), messageTypeStr);
+
+            await writeObjectAsync(metadata);
+            await writeObjectAsync(message);
         }
 
-        private async Task sendAllPostedMessages()
+        private async Task authenticateAsync(Guid sessionId, bool admin, string password, UserInfo initUserInfo)
         {
-            while(_outboundMessageQueue.Count > 0 && IsConnected)
-            {
-                object message;
-                if(_outboundMessageQueue.TryDequeue(out message))
-                {
-                    string messageTypeStr = SerializeUtil.TypeToString(message.GetType());
-                    var metadata = new ClientMessageMetadata(SessionId, UserId, Guid.NewGuid(), messageTypeStr);
+            // send auth info
+            var authInfo = new AuthenticationRequest(sessionId, admin, password, initUserInfo);
+            await writeObjectAsync(authInfo);
 
-                    await writeObjectAsync(_streamWriter!, metadata);
-                    await writeObjectAsync(_streamWriter!, message);
-                }    
-            }
+            // recive auth response
+            var authResponse = (await readObjectAsync(typeof(ServerAuthenticationResponse)) as ServerAuthenticationResponse);
+            if (authResponse == null)
+                throw new Exception("Server did not send proper authentication response");
+
+            if (authResponse.Success != true)
+                throw new Exception($"Authentication failed, reason: {authResponse.FailureReason!}");
+
+            SessionId = authResponse.SessionId;
+            UserId = authResponse.UserId;
         }
 
-        private async Task connectAsync()
-        {
-            if (_streamWriter != null)
-                _streamWriter.Dispose();
-
-            using (TcpClient client = new TcpClient())
-            {
-                await client.ConnectAsync(_host, _port);
-                IsConnected = true;
-
-                var streamReader = new StreamReader(client.GetStream());
-                _streamWriter = new StreamWriter(client.GetStream());
-
-                await sendAllPostedMessages();
-
-                await enterMessageLoopAsync(streamReader);
-            }
-        }
-
-        private async Task enterMessageLoopAsync(StreamReader streamReader)
-        {
-
-
-
-
-            while(_isRunning)
-            {
-                string? metadataJson = await streamReader.ReadLineAsync();
-                string? messageJson = await streamReader.ReadLineAsync();
-
-                Type messageType = getTypeFromMetadata(metadataJson);
-                object message = parseMessage(messageType, messageJson);
-
-                var eventArgs = new MessageRecievedEventArgs(SessionId, UserId, messageType, message);
-                MessageRecived?.Invoke(this, eventArgs);
-            }
-        }
-
-        private async Task writeObjectAsync(StreamWriter writer, object obj)
+        private async Task writeObjectAsync(object obj)
         {
             string objJson = SerializeUtil.SerializeObject(obj);
-            await writer.WriteLineAsync(objJson);
-            await writer.FlushAsync();
+            await _writer.WriteLineAsync(objJson);
+            await _writer.FlushAsync();
         }
 
-        private async Task<object?> readObjectAsync(StreamReader reader, Type type)
+        private async Task<object?> readObjectAsync(Type type)
         {
-            string? json = await reader.ReadLineAsync();
+            string? json = await _reader.ReadLineAsync();
             return SerializeUtil.DeserializeObject(type, json);
         }
 
         public void Dispose()
         {
-            Stop();
-            if(_streamWriter != null)
-                _streamWriter.Dispose();
+            _canceled = true;
+            _tcpClient.Close();
+            _reader.Dispose();
+            _writer.Dispose();
         }
     }
 }
-*/

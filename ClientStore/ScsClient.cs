@@ -18,11 +18,11 @@ namespace ClientStore
 
     internal class NetworkGroup
     {
-        public MessageLoop MessageLoop { get; }
+        public ClientMessageLoop MessageLoop { get; }
         public FileRetriever FileRetriever { get; }
         public FileSender FileSender { get; }
 
-        public NetworkGroup(MessageLoop messageLoop, FileRetriever fileRetriever, FileSender fileSender)
+        public NetworkGroup(ClientMessageLoop messageLoop, FileRetriever fileRetriever, FileSender fileSender)
         {
             MessageLoop = messageLoop;
             FileRetriever = fileRetriever;
@@ -78,17 +78,22 @@ namespace ClientStore
 
             try
             {
-                var messageLoop = await MessageLoop.ConnectLoopAsync(host, port, sessionRequestId,
+                var messageLoop = await ClientMessageLoop.ConnectLoopAsync(host, port, sessionRequestId,
                     admin, password, initUserInfo);
+                messageLoop.OnMessage += handleMessage;
 
                 _networkGroup = new NetworkGroup(messageLoop, fileRetriever, fileSender);
+
                 return true;
             }
             catch (Exception)
             {
                 return false;
             }
+
         }
+
+
 
         #region Sender
 
@@ -144,7 +149,7 @@ namespace ClientStore
 
         #region Handler
 
-        private void handleMessage(MessageLoop loop, Type messageType, object message)
+        private void handleMessage(ClientMessageLoop loop, Type messageType, object message)
         {
             if (messageType == typeof(ModListUpdateMessage))
             {

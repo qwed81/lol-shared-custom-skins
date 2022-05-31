@@ -4,7 +4,7 @@ using System.Text;
 
 namespace StoreModels.Messages.Client
 {
-    public class FileRequestMetadata
+    public class FileGetRequest : ClientRequest
     {
 
         public Guid SessionId { get; set; }
@@ -13,7 +13,7 @@ namespace StoreModels.Messages.Client
 
         public FileDescriptor File { get; set; }
 
-        public FileRequestMetadata(Guid sessionId, Guid messageId, FileDescriptor fileDescriptor)
+        public FileGetRequest(Guid sessionId, Guid messageId, FileDescriptor fileDescriptor) : base(RequestType.FILE_RETRIVE)
         {
             SessionId = sessionId;
             MessageId = messageId;
