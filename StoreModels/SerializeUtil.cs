@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Reflection;
 using Newtonsoft.Json;
 
-namespace StoreModels.Messages
+namespace StoreModels
 {
     public class SerializeUtil
     {

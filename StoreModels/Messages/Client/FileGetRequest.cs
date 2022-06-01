@@ -9,14 +9,15 @@ namespace StoreModels.Messages.Client
 
         public Guid SessionId { get; set; }
 
-        public Guid MessageId { get; set; }
+        public Guid PrivateAccessToken { get; set; }
 
         public FileDescriptor File { get; set; }
 
-        public FileGetRequest(Guid sessionId, Guid messageId, FileDescriptor fileDescriptor) : base(RequestType.FILE_RETRIVE)
+        public FileGetRequest(Guid sessionId, Guid privateAccessToken,
+            FileDescriptor fileDescriptor) : base(RequestType.FILE_RETRIVE)
         {
             SessionId = sessionId;
-            MessageId = messageId;
+            PrivateAccessToken = privateAccessToken;
             File = fileDescriptor;
         }
 

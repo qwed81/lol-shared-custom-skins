@@ -19,9 +19,7 @@ namespace ClientStore.Network
     {
 
         private bool _canceled;
-        private TcpClient _tcpClient;
-        private StreamWriter _writer;
-        private StreamReader _reader;
+        private TcpClientWrapper _client;
 
         public Guid SessionId { get; private set; }
 
@@ -32,9 +30,7 @@ namespace ClientStore.Network
         private ClientMessageLoop(TcpClient client)
         {
             _canceled = false;
-            _tcpClient = client;
-            _reader = new StreamReader(client.GetStream());
-            _writer = new StreamWriter(client.GetStream());
+            _client = new TcpClientWrapper(client);
         }
 
         public static async Task<ClientMessageLoop> ConnectLoopAsync(string host, int port, Guid requestSessionId,
@@ -62,8 +58,15 @@ namespace ClientStore.Network
             {
                 while (_canceled == false)
                 {
-                    var (type, message) = await readMessageAsync();
-                    OnMessage?.Invoke(this, type, message);
+                    var metadata = await _client.ExpectObjectAsync<ServerMessageMetadata>("Server message not valid");
+
+                    Type? messageType = SerializeUtil.StringToType(metadata.MessageType);
+                    if (messageType == null)
+                        throw new Exception("Server message not valid");
+
+                    var message = await _client.ExpectObjectAsync<object>("Server message not valid", messageType);
+
+                    OnMessage?.Invoke(this, messageType, message);
                 }
             } 
             catch (Exception ex)
@@ -74,42 +77,22 @@ namespace ClientStore.Network
             return new Exception("Closed manually");
         }
 
-        private async Task<(Type, object)> readMessageAsync()
-        {
-            var metadata = await readObjectAsync(typeof(ServerMessageMetadata)) as ServerMessageMetadata;
-            if (metadata == null)
-                throw new Exception("Invalid message from server");
-
-            Type? messageType = SerializeUtil.StringToType(metadata.MessageType);
-            if (messageType == null)
-                throw new Exception("Invalid message type");
-
-            object? message = await readObjectAsync(messageType);
-            if (message == null)
-                throw new Exception("Invalid message from server");
-
-            return (messageType, message);
-        }
-
         public async Task PostMessageAsync(Type messageType, object message)
         {
             string messageTypeStr = SerializeUtil.TypeToString(messageType);
             var metadata = new ClientMessageMetadata(SessionId, UserId, Guid.NewGuid(), messageTypeStr);
 
-            await writeObjectAsync(metadata);
-            await writeObjectAsync(message);
+            await _client.WriteObjectsAsync(metadata, message);
         }
 
         private async Task authenticateAsync(Guid sessionId, bool admin, string password, UserInfo initUserInfo)
         {
             // send auth info
             var authInfo = new AuthenticationRequest(sessionId, admin, password, initUserInfo);
-            await writeObjectAsync(authInfo);
+            await _client.WriteObjectAsync(authInfo);
 
             // recive auth response
-            var authResponse = (await readObjectAsync(typeof(ServerAuthenticationResponse)) as ServerAuthenticationResponse);
-            if (authResponse == null)
-                throw new Exception("Server did not send proper authentication response");
+            var authResponse = await _client.ExpectObjectAsync<AuthenticationResponse>("Auth response not valid");
 
             if (authResponse.Success != true)
                 throw new Exception($"Authentication failed, reason: {authResponse.FailureReason!}");
@@ -118,25 +101,11 @@ namespace ClientStore.Network
             UserId = authResponse.UserId;
         }
 
-        private async Task writeObjectAsync(object obj)
-        {
-            string objJson = SerializeUtil.SerializeObject(obj);
-            await _writer.WriteLineAsync(objJson);
-            await _writer.FlushAsync();
-        }
-
-        private async Task<object?> readObjectAsync(Type type)
-        {
-            string? json = await _reader.ReadLineAsync();
-            return SerializeUtil.DeserializeObject(type, json);
-        }
-
         public void Dispose()
         {
             _canceled = true;
-            _tcpClient.Close();
-            _reader.Dispose();
-            _writer.Dispose();
+            _client.Client.Dispose();
+            _client.Dispose();
         }
     }
 }

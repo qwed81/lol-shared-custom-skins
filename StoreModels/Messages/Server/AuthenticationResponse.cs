@@ -4,7 +4,7 @@ using System.Text;
 
 namespace StoreModels.Messages.Server
 {
-    public class ServerAuthenticationResponse
+    public class AuthenticationResponse
     {
 
         public bool Success { get; set; }
@@ -13,11 +13,13 @@ namespace StoreModels.Messages.Server
 
         public Guid UserId { get; set; }
 
+        public Guid PrivateAccessToken { get; set; }
+
         public string? FailureReason { get; set; }
 
-        public static ServerAuthenticationResponse CreateFailure(string reason)
+        public static AuthenticationResponse CreateFailure(string reason)
         {
-            return new ServerAuthenticationResponse
+            return new AuthenticationResponse
             {
                 Success = false,
                 FailureReason = reason
@@ -25,13 +27,14 @@ namespace StoreModels.Messages.Server
 
         }
 
-        public static ServerAuthenticationResponse CreateSuccess(Guid sessionId, Guid userId)
+        public static AuthenticationResponse CreateSuccess(Guid sessionId, Guid userId, Guid accessToken)
         {
-            return new ServerAuthenticationResponse
+            return new AuthenticationResponse
             {
                 Success = true,
                 SessionId = sessionId,
-                UserId = userId
+                UserId = userId,
+                PrivateAccessToken = accessToken
             };
         }
 

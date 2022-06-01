@@ -7,48 +7,47 @@ using System.Threading.Tasks;
 
 namespace StoreModels.File
 {
+
     public class FileIndex
     {
 
-        private ConcurrentDictionary<FileDescriptor, double> _filePercentages;
+        private ConcurrentDictionary<FileDescriptor, FileProgress> _fileProgresses;
         private PathSelector _pathSelector;
 
         public FileIndex(PathSelector pathSelector)
         {
-            _filePercentages = new ConcurrentDictionary<FileDescriptor, double>();
+            _fileProgresses = new ConcurrentDictionary<FileDescriptor, FileProgress>();
             _pathSelector = pathSelector;
         }
 
         public bool FileExists(FileDescriptor fd)
         {
-            return _filePercentages.ContainsKey(fd);
+            return _fileProgresses.ContainsKey(fd);
         }
 
-        public bool IsFileCompleted(FileDescriptor fd)
+        public FileProgress GetFileDownloadCompletion(FileDescriptor fd)
         {
-            return _filePercentages[fd] == 1;
+            return _fileProgresses[fd];
         }
 
-        public double GetFileCompletion(FileDescriptor fd)
+        public FileStream StreamCreateFile(Guid sessionId, FileDescriptor fd, FileType fileType,
+            out IProgress<double> setCompletion)
         {
-            return _filePercentages[fd];
-        }
-
-        public FileStream StreamCreateFile(Guid sessionId, FileDescriptor fd, FileType fileType, out Action<double> setCompletion)
-        {
-            if (_filePercentages.ContainsKey(fd))
+            if (_fileProgresses.ContainsKey(fd))
                 throw new ArgumentException("File already exists");
 
-            setCompletion = (prog) => _filePercentages[fd] = prog;
-            return new FileStream(_pathSelector.GetPath(sessionId, fd, fileType), FileMode.CreateNew, FileAccess.Write, FileShare.None);
+            setCompletion = GetFileDownloadCompletion(fd);
+            return new FileStream(_pathSelector.GetPath(sessionId, fd, fileType),
+                FileMode.CreateNew, FileAccess.Write, FileShare.None);
         }
 
         public FileStream StreamCompletedFile(Guid sessionId, FileDescriptor fd, FileType fileType)
         {
-            if (!IsFileCompleted(fd))
+            if (GetFileDownloadCompletion(fd).IsCompleted == false)
                 throw new ArgumentException("File download is not completed");
 
-            return new FileStream(_pathSelector.GetPath(sessionId, fd, fileType), FileMode.Open, FileAccess.Read, FileShare.None);
+            return new FileStream(_pathSelector.GetPath(sessionId, fd, fileType),
+                FileMode.Open, FileAccess.Read, FileShare.None);
         }
 
 

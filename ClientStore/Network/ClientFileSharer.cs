@@ -10,42 +10,46 @@ using StoreModels.File;
 using StoreModels.Messages;
 using StoreModels.Messages.Client;
 
-
 namespace ClientStore.Network
 {
-    internal class FileSender
+    internal class ClientFileSharer
     {
 
         private string _host;
         private int _port;
         private FileIndex _fileIndex;
 
-        public FileSender(string host, int port, FileIndex fileIndex)
+        public ClientFileSharer(string host, int port, FileIndex fileIndex)
         {
             _host = host;
             _port = port;
             _fileIndex = fileIndex;
         }
 
-        public async Task<bool> SendFileAsync(Guid sessionId, Guid privateAccessToken, 
+        public Task<bool> RetrieveFileIfAbsentAsync(Guid sessionId, Guid privateAccessToken,
             FileDescriptor fd, FileType fileType)
         {
-            using (FileStream fileStream = _fileIndex.StreamCompletedFile(sessionId, fd, fileType))
+            if (_fileIndex.FileExists(fd))
+                return Task.FromResult(true);
+
+
+            Action<double> setCompletion;
+            using (FileStream fileStream = _fileIndex.StreamCreateFile(sessionId, fd, fileType, out setCompletion))
             using (TcpClient client = new TcpClient())
             {
                 try
                 {
                     await client.ConnectAsync(_host, _port);
 
-                    // sends metadata
-                    ulong fileSize = (ulong)fileStream.Length;
+                    // sends request
                     using (var clientWrapper = new TcpClientWrapper(client))
                     {
-                        var request = new FilePutRequest(sessionId, privateAccessToken, fd, fileType, fileSize);
+                        var request = new FileGetRequest(sessionId, privateAccessToken, fd);
                         await clientWrapper.WriteObjectAsync(request);
-                    }
+                    }                        
 
-                    await sendBytesFileAsync(client.GetStream(), fileStream);
+                    await retrieveFileBytesAsync(client.GetStream(), fileStream, setCompletion);
+
                     return true;
                 }
                 catch (Exception)
@@ -53,6 +57,12 @@ namespace ClientStore.Network
                     return false;
                 }
             }
+        }
+
+        private async Task downloadFile(TcpClientWrapper client, FileStream fileStream, 
+            Guid sessionId, Guid privateAccessToken, FileDescriptor fd, FileType fileType)
+        {
+
         }
 
     }

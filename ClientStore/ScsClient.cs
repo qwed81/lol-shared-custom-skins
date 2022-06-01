@@ -19,10 +19,10 @@ namespace ClientStore
     internal class NetworkGroup
     {
         public ClientMessageLoop MessageLoop { get; }
-        public FileRetriever FileRetriever { get; }
+        public ClientFileSharer FileRetriever { get; }
         public FileSender FileSender { get; }
 
-        public NetworkGroup(ClientMessageLoop messageLoop, FileRetriever fileRetriever, FileSender fileSender)
+        public NetworkGroup(ClientMessageLoop messageLoop, ClientFileSharer fileRetriever, FileSender fileSender)
         {
             MessageLoop = messageLoop;
             FileRetriever = fileRetriever;
@@ -73,7 +73,7 @@ namespace ClientStore
             CurrentUser = initUserInfo;
             SyncedUser = new UserInfo(null, null, null, default);
 
-            var fileRetriever = new FileRetriever(host, port, _fileIndex);
+            var fileRetriever = new ClientFileSharer(host, port, _fileIndex);
             var fileSender = new FileSender(host, port, _fileIndex);
 
             try
