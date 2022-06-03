@@ -7,18 +7,18 @@ namespace StoreModels.Messages.Client
     public class FileGetRequest : ClientRequest
     {
 
-        public Guid SessionId { get; set; }
-
         public Guid PrivateAccessToken { get; set; }
 
         public FileDescriptor File { get; set; }
 
-        public FileGetRequest(Guid sessionId, Guid privateAccessToken,
-            FileDescriptor fileDescriptor) : base(RequestType.FILE_RETRIVE)
+        public FileType FileType { get; set; }
+
+        public FileGetRequest(Guid sessionId, Guid privateAccessToken, FileDescriptor fileDescriptor, 
+            FileType fileType) : base(RequestType.FILE_GET, sessionId)
         {
-            SessionId = sessionId;
             PrivateAccessToken = privateAccessToken;
             File = fileDescriptor;
+            FileType = fileType;
         }
 
     }

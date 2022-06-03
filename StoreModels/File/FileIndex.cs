@@ -30,24 +30,42 @@ namespace StoreModels.File
             return _fileProgresses[fd];
         }
 
-        public FileStream StreamCreateFile(Guid sessionId, FileDescriptor fd, FileType fileType,
-            out IProgress<double> setCompletion)
+        public FileProgress CreateFileProgress(FileDescriptor fd)
         {
             if (_fileProgresses.ContainsKey(fd))
                 throw new ArgumentException("File already exists");
+
+            var progress = new FileProgress(fd);
+            _fileProgresses[fd] = progress;
+
+            return progress;
+        }
+
+        public FileStream StreamCreateFile(Guid sessionId, FileDescriptor fd, FileType fileType,
+            out FileProgress setCompletion)
+        {
+            if (_fileProgresses.ContainsKey(fd) == false)
+                CreateFileProgress(fd);
 
             setCompletion = GetFileDownloadCompletion(fd);
             return new FileStream(_pathSelector.GetPath(sessionId, fd, fileType),
                 FileMode.CreateNew, FileAccess.Write, FileShare.None);
         }
 
-        public FileStream StreamCompletedFile(Guid sessionId, FileDescriptor fd, FileType fileType)
+        public FileStream? StreamCompletedFile(Guid sessionId, FileDescriptor fd, FileType fileType)
         {
             if (GetFileDownloadCompletion(fd).IsCompleted == false)
-                throw new ArgumentException("File download is not completed");
+                return null;
 
-            return new FileStream(_pathSelector.GetPath(sessionId, fd, fileType),
-                FileMode.Open, FileAccess.Read, FileShare.None);
+            try
+            {
+                return new FileStream(_pathSelector.GetPath(sessionId, fd, fileType),
+                    FileMode.Open, FileAccess.Read, FileShare.Read);
+            } 
+            catch (IOException)
+            {
+                return null;
+            }
         }
 
 

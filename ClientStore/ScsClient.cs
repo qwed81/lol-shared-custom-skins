@@ -18,11 +18,11 @@ namespace ClientStore
 
     internal class NetworkGroup
     {
-        public ClientMessageLoop MessageLoop { get; }
-        public ClientFileSharer FileRetriever { get; }
+        public ClientMessageChanel MessageLoop { get; }
+        public FileReciever FileRetriever { get; }
         public FileSender FileSender { get; }
 
-        public NetworkGroup(ClientMessageLoop messageLoop, ClientFileSharer fileRetriever, FileSender fileSender)
+        public NetworkGroup(ClientMessageChanel messageLoop, FileReciever fileRetriever, FileSender fileSender)
         {
             MessageLoop = messageLoop;
             FileRetriever = fileRetriever;
@@ -73,12 +73,12 @@ namespace ClientStore
             CurrentUser = initUserInfo;
             SyncedUser = new UserInfo(null, null, null, default);
 
-            var fileRetriever = new ClientFileSharer(host, port, _fileIndex);
+            var fileRetriever = new FileReciever(host, port, _fileIndex);
             var fileSender = new FileSender(host, port, _fileIndex);
 
             try
             {
-                var messageLoop = await ClientMessageLoop.ConnectLoopAsync(host, port, sessionRequestId,
+                var messageLoop = await ClientMessageChanel.ConnectChanelAsync(host, port, sessionRequestId,
                     admin, password, initUserInfo);
                 messageLoop.OnMessage += handleMessage;
 
@@ -149,7 +149,7 @@ namespace ClientStore
 
         #region Handler
 
-        private void handleMessage(ClientMessageLoop loop, Type messageType, object message)
+        private void handleMessage(ClientMessageChanel loop, Type messageType, object message)
         {
             if (messageType == typeof(ModListUpdateMessage))
             {

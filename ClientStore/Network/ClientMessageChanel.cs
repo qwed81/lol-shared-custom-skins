@@ -13,9 +13,9 @@ using System.Threading.Tasks;
 namespace ClientStore.Network
 {
 
-    internal delegate void MessageHandler(ClientMessageLoop sender, Type messageType, object message);
+    internal delegate void MessageHandler(ClientMessageChanel sender, Type messageType, object message);
 
-    internal class ClientMessageLoop : IDisposable
+    internal class ClientMessageChanel : IDisposable
     {
 
         private bool _canceled;
@@ -27,13 +27,13 @@ namespace ClientStore.Network
 
         public event MessageHandler? OnMessage;
 
-        private ClientMessageLoop(TcpClient client)
+        private ClientMessageChanel(TcpClient client)
         {
             _canceled = false;
             _client = new TcpClientWrapper(client);
         }
 
-        public static async Task<ClientMessageLoop> ConnectLoopAsync(string host, int port, Guid requestSessionId,
+        public static async Task<ClientMessageChanel> ConnectChanelAsync(string host, int port, Guid requestSessionId,
             bool admin, string password, UserInfo initUserInfo)
         {
             TcpClient client = new TcpClient();
@@ -41,7 +41,7 @@ namespace ClientStore.Network
             {
                 await client.ConnectAsync(host, port);
 
-                var messageLoop = new ClientMessageLoop(client);
+                var messageLoop = new ClientMessageChanel(client);
                 await messageLoop.authenticateAsync(requestSessionId, admin, password, initUserInfo);
 
                 return messageLoop;
@@ -88,11 +88,11 @@ namespace ClientStore.Network
         private async Task authenticateAsync(Guid sessionId, bool admin, string password, UserInfo initUserInfo)
         {
             // send auth info
-            var authInfo = new AuthenticationRequest(sessionId, admin, password, initUserInfo);
+            var authInfo = new ConnectMessageChanelRequest(sessionId, admin, password, initUserInfo);
             await _client.WriteObjectAsync(authInfo);
 
             // recive auth response
-            var authResponse = await _client.ExpectObjectAsync<AuthenticationResponse>("Auth response not valid");
+            var authResponse = await _client.ExpectObjectAsync<ConnectMessageChanelResponse>("Auth response not valid");
 
             if (authResponse.Success != true)
                 throw new Exception($"Authentication failed, reason: {authResponse.FailureReason!}");

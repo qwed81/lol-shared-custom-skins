@@ -4,10 +4,8 @@ using System.Text;
 
 namespace StoreModels.Messages.Client
 {
-    public class AuthenticationRequest : ClientRequest
+    public class ConnectMessageChanelRequest : ClientRequest
     {
-
-        public Guid SessionRequestId { get; set; }
 
         public string Password { get; set; }
 
@@ -15,10 +13,9 @@ namespace StoreModels.Messages.Client
 
         public UserInfo InitialUserInfo { get; set; }
 
-        public AuthenticationRequest(Guid sessionRequestId, bool admin, string password, 
-            UserInfo initUserInfo) : base(RequestType.MESSAGE_LOOP)
+        public ConnectMessageChanelRequest(Guid sessionRequestId, bool admin, string password, 
+            UserInfo initUserInfo) : base(RequestType.CONNECT_MESSAGE_CHANEL, sessionRequestId)
         {
-            SessionRequestId = sessionRequestId;
             Admin = admin;
             Password = password;
             InitialUserInfo = initUserInfo;

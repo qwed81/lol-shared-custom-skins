@@ -60,7 +60,7 @@ namespace StoreModels
             return (T)obj;
         }
 
-        public async Task WriteFileAsync(Stream outputFs, long fileSize, IProgress<double> progress)
+        public async Task WriteFileAsync(Stream inputFs, long fileSize, IProgress<double> progress)
         {
             var networkStream = Client.GetStream();
 
@@ -69,7 +69,7 @@ namespace StoreModels
             long totalAmtRead = 0;
             while (amtRead != 0)
             {
-                amtRead = await outputFs.ReadAsync(buffer, 0, buffer.Length);
+                amtRead = await inputFs.ReadAsync(buffer, 0, buffer.Length);
                 if (amtRead == 0)
                     break;
 
@@ -83,7 +83,7 @@ namespace StoreModels
             progress.Report(1);
         }
 
-        public async Task DownloadFileAsync(Stream inputFs, long fileSize, IProgress<double> progress)
+        public async Task DownloadFileAsync(Stream outputFs, long fileSize, IProgress<double> progress)
         {
             var networkStream = Client.GetStream();
 
@@ -95,8 +95,8 @@ namespace StoreModels
                 int amtRead = await networkStream.ReadAsync(buffer, 0, buffer.Length);
                 totalAmtRead = amtRead + totalAmtRead;
 
-                await inputFs.WriteAsync(buffer, 0, amtRead);
-                await inputFs.FlushAsync();
+                await outputFs.WriteAsync(buffer, 0, amtRead);
+                await outputFs.FlushAsync();
 
                 progress.Report(totalAmtRead / (double)fileSize);
             }
