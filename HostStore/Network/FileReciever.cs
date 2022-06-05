@@ -43,9 +43,9 @@ namespace HostStore.Network
                 return;
             }
 
+            long fileLength = file.Length;
             await client.WriteObjectAsync(new FileGetResponse(file.Length));
-            await client.WriteFileAsync();
-
+            await client.WriteFileAsync(file, fileLength, new Progress<double>());
         }
 
         public async Task HandleFilePutRequestAsync(TcpClientWrapper client, FilePutRequest? req, Session session)
@@ -59,7 +59,11 @@ namespace HostStore.Network
                 await client.WriteObjectAsync(res);
             }
 
+            FileProgress fp;
+            FileStream file = _fileIndex.StreamCreateFile(session.SessionId, req.FileDescriptor, req.FileType, out fp);
 
+            await client.WriteObjectAsync(new FilePutResponse());
+            await client.DownloadFileAsync(file, req.FileLength, fp);            
 
         }
 

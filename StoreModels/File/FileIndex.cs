@@ -12,12 +12,13 @@ namespace StoreModels.File
     {
 
         private ConcurrentDictionary<FileDescriptor, FileProgress> _fileProgresses;
-        private PathSelector _pathSelector;
+        
+        public PathSelector PathSelector { get; }
 
         public FileIndex(PathSelector pathSelector)
         {
             _fileProgresses = new ConcurrentDictionary<FileDescriptor, FileProgress>();
-            _pathSelector = pathSelector;
+            PathSelector = pathSelector;
         }
 
         public bool FileExists(FileDescriptor fd)
@@ -25,7 +26,7 @@ namespace StoreModels.File
             return _fileProgresses.ContainsKey(fd);
         }
 
-        public FileProgress GetFileDownloadCompletion(FileDescriptor fd)
+        public FileProgress GetFileDownloadProgress(FileDescriptor fd)
         {
             return _fileProgresses[fd];
         }
@@ -47,19 +48,19 @@ namespace StoreModels.File
             if (_fileProgresses.ContainsKey(fd) == false)
                 CreateFileProgress(fd);
 
-            setCompletion = GetFileDownloadCompletion(fd);
-            return new FileStream(_pathSelector.GetPath(sessionId, fd, fileType),
+            setCompletion = GetFileDownloadProgress(fd);
+            return new FileStream(PathSelector.GetPath(sessionId, fd, fileType),
                 FileMode.CreateNew, FileAccess.Write, FileShare.None);
         }
 
         public FileStream? StreamCompletedFile(Guid sessionId, FileDescriptor fd, FileType fileType)
         {
-            if (GetFileDownloadCompletion(fd).IsCompleted == false)
+            if (GetFileDownloadProgress(fd).IsCompleted == false)
                 return null;
 
             try
             {
-                return new FileStream(_pathSelector.GetPath(sessionId, fd, fileType),
+                return new FileStream(PathSelector.GetPath(sessionId, fd, fileType),
                     FileMode.Open, FileAccess.Read, FileShare.Read);
             } 
             catch (IOException)

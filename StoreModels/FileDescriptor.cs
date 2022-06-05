@@ -19,6 +19,15 @@ namespace StoreModels
             Hash = hash;
         }
 
+        public static FileDescriptor FromSimplifiedFileName(string fileName)
+        {
+            string[] strSplit = fileName.Split('_');
+            string name = strSplit[0];
+            string hash = strSplit[1];
+
+            return new FileDescriptor(name, hash);
+        }
+
         public override string ToString()
         {
             return Hash + '_' + Name;

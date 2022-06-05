@@ -4,7 +4,7 @@ using System.Text;
 
 namespace StoreModels.File
 {
-    public class FileProgress : IProgress<double>
+    public class FileProgress : IProgress<double>, IFileProgress
     {
 
         public FileDescriptor File { get; }

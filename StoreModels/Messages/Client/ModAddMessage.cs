@@ -7,11 +7,11 @@ namespace StoreModels.Messages.Client
     public class ModAddMessage
     {
 
-        public ModInfo Mod { get; set; }
+        public ModInfo ModInfo { get; set; }
 
-        public ModAddMessage(ModInfo mod)
+        public ModAddMessage(ModInfo modInfo)
         {
-            Mod = mod;
+            ModInfo = modInfo;
         }
 
     }

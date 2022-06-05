@@ -1,26 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 
 namespace StoreModels
 {
-    public class TcpClientWrapper : IDisposable
+    public class StreamWrapper : IDisposable
     {
 
         private StreamWriter _writer;
         private StreamReader _reader;
+        private Stream _stream;
 
-        public TcpClient Client { get; }
-
-        public TcpClientWrapper(TcpClient client)
+        public StreamWrapper(Stream stream)
         {
-            Client = client;
-            _reader = new StreamReader(client.GetStream());
-            _writer = new StreamWriter(client.GetStream());
+            _reader = new StreamReader(stream);
+            _writer = new StreamWriter(stream);
+            _stream = stream;
         }
 
         public async Task WriteObjectAsync(object obj)
@@ -32,7 +29,7 @@ namespace StoreModels
 
         public async Task WriteObjectsAsync(params object[] objs)
         {
-            foreach(object obj in objs)
+            foreach (object obj in objs)
             {
                 string objJson = SerializeUtil.SerializeObject(obj);
                 await _writer.WriteLineAsync(objJson);
@@ -60,57 +57,52 @@ namespace StoreModels
             return (T)obj;
         }
 
-        public async Task WriteFileAsync(Stream inputFs, long fileSize, IProgress<double> progress)
+        public async Task WriteFileAsync(Stream outputFs, long fileSize, IProgress<double> progress)
         {
-            var networkStream = Client.GetStream();
-
             byte[] buffer = new byte[1024];
             int amtRead = 1;
             long totalAmtRead = 0;
             while (amtRead != 0)
             {
-                amtRead = await inputFs.ReadAsync(buffer, 0, buffer.Length);
+                amtRead = await outputFs.ReadAsync(buffer, 0, buffer.Length);
                 if (amtRead == 0)
                     break;
 
                 totalAmtRead += amtRead;
 
-                await networkStream.WriteAsync(buffer, 0, amtRead);
-                await networkStream.FlushAsync();
+                await _stream.WriteAsync(buffer, 0, amtRead);
+                await _stream.FlushAsync();
                 progress.Report(amtRead / (double)totalAmtRead);
             }
 
             progress.Report(1);
         }
 
-        public async Task DownloadFileAsync(Stream outputFs, long fileSize, IProgress<double> progress)
+        public async Task ReadFileAsync(Stream inputFs, long fileSize, IProgress<double> progress)
         {
-            var networkStream = Client.GetStream();
-
             byte[] buffer = new byte[1024];
 
             long totalAmtRead = 0;
             while (totalAmtRead < fileSize)
             {
-                int amtRead = await networkStream.ReadAsync(buffer, 0, buffer.Length);
+                int amtRead = await _stream.ReadAsync(buffer, 0, buffer.Length);
                 totalAmtRead = amtRead + totalAmtRead;
 
-                await outputFs.WriteAsync(buffer, 0, amtRead);
-                await outputFs.FlushAsync();
+                await inputFs.WriteAsync(buffer, 0, amtRead);
+                await inputFs.FlushAsync();
 
                 progress.Report(totalAmtRead / (double)fileSize);
             }
 
             progress.Report(1);
-        } 
+        }
 
-        // does not dispose the underlying tcp client
+        // does not dispose the underlying stream
         public void Dispose()
         {
             _writer.Dispose();
             _reader.Dispose();
         }
-
 
     }
 }

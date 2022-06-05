@@ -1,4 +1,5 @@
-﻿using StoreModels;
+﻿using ClientStore.ModelLogic;
+using StoreModels;
 using StoreModels.Messages;
 using StoreModels.Messages.Client;
 using StoreModels.Messages.Server;
@@ -13,38 +14,41 @@ using System.Threading.Tasks;
 namespace ClientStore.Network
 {
 
-    internal delegate void MessageHandler(ClientMessageChanel sender, Type messageType, object message);
-
     internal class ClientMessageChanel : IDisposable
     {
 
         private bool _canceled;
         private TcpClientWrapper _client;
+        private IClientMessageHandler _handler;
 
         public Guid SessionId { get; private set; }
 
         public Guid UserId { get; private set; }
 
-        public event MessageHandler? OnMessage;
+        public Guid PrivateAccessToken { get; set; }
 
-        private ClientMessageChanel(TcpClient client)
+        private ClientMessageChanel(TcpClient client, IClientMessageHandler messageHandler)
         {
             _canceled = false;
             _client = new TcpClientWrapper(client);
+            _handler = messageHandler;
         }
 
-        public static async Task<ClientMessageChanel> ConnectChanelAsync(string host, int port, Guid requestSessionId,
-            bool admin, string password, UserInfo initUserInfo)
+        public static async Task<ClientMessageChanel> ConnectChanelAsync(ClientConnectionInfo info, 
+            IClientMessageHandler messageHandler)
         {
             TcpClient client = new TcpClient();
             try
             {
-                await client.ConnectAsync(host, port);
+                await client.ConnectAsync(info.Host, info.Port);
 
-                var messageLoop = new ClientMessageChanel(client);
-                await messageLoop.authenticateAsync(requestSessionId, admin, password, initUserInfo);
+                var chanel = new ClientMessageChanel(client, messageHandler);
 
-                return messageLoop;
+                var initUserInfo = new UserInfo(info.InitUsername, info.InitStatus, info.InitProfilePicture, Guid.Empty);
+                var authInfo = new ConnectMessageChanelRequest(info.SessionRequestId, info.Admin, info.Password, initUserInfo);
+                await chanel.authenticateAsync(authInfo);
+
+                return chanel;
             }
             finally // if an error occurs with connection, still close the client
             {
@@ -66,7 +70,7 @@ namespace ClientStore.Network
 
                     var message = await _client.ExpectObjectAsync<object>("Server message not valid", messageType);
 
-                    OnMessage?.Invoke(this, messageType, message);
+                    _handler.HandleMessage(messageType, message);
                 }
             } 
             catch (Exception ex)
@@ -85,11 +89,10 @@ namespace ClientStore.Network
             await _client.WriteObjectsAsync(metadata, message);
         }
 
-        private async Task authenticateAsync(Guid sessionId, bool admin, string password, UserInfo initUserInfo)
+        private async Task authenticateAsync(ConnectMessageChanelRequest req)
         {
             // send auth info
-            var authInfo = new ConnectMessageChanelRequest(sessionId, admin, password, initUserInfo);
-            await _client.WriteObjectAsync(authInfo);
+            await _client.WriteObjectAsync(req);
 
             // recive auth response
             var authResponse = await _client.ExpectObjectAsync<ConnectMessageChanelResponse>("Auth response not valid");
@@ -99,6 +102,7 @@ namespace ClientStore.Network
 
             SessionId = authResponse.SessionId;
             UserId = authResponse.UserId;
+            PrivateAccessToken = authResponse.PrivateAccessToken;
         }
 
         public void Dispose()

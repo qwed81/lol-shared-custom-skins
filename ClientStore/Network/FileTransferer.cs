@@ -17,45 +17,32 @@ namespace ClientStore.Network
 
     internal class ExtendedFilePutRequest : FileGetRequest
     {
-        public FileType FileType { get; set; }
-
         public IProgress<double> SendProgress { get; set; }
 
         public ExtendedFilePutRequest(Guid sessionId, Guid privateAccessToken, IProgress<double> sp,
-            FileDescriptor fd, FileType fileType) : base(sessionId, privateAccessToken, fd)
+            FileDescriptor fd, FileType fileType) : base(sessionId, privateAccessToken, fd, fileType)
         {
             SendProgress = sp;
             FileType = fileType;
         }
     }
 
-    internal class ExtendedFileGetRequest : FileGetRequest
-    {
-        public FileType FileType { get; set; }
-
-        public ExtendedFileGetRequest(Guid sessionId, Guid privateAccessToken,
-            FileDescriptor fd, FileType fileType) : base(sessionId, privateAccessToken, fd)
-        {
-            FileType = fileType;
-        }
-    }
-
-    internal class FileSender
+    internal class FileTransferer
     {
 
         private string _host;
         private int _port;
         private FileIndex _fileIndex;
         private NetworkQueue<ExtendedFilePutRequest> _putQueue;
-        private NetworkQueue<ExtendedFileGetRequest> _getQueue;
+        private NetworkQueue<FileGetRequest> _getQueue;
 
-        public FileSender(string host, int port, FileIndex fileIndex)
+        public FileTransferer(string host, int port, FileIndex fileIndex)
         {
             _host = host;
             _port = port;
             _fileIndex = fileIndex;
             _putQueue = new NetworkQueue<ExtendedFilePutRequest>(startSendFile);
-            _getQueue = new NetworkQueue<ExtendedFileGetRequest>(startDownloadFile);
+            _getQueue = new NetworkQueue<FileGetRequest>(startDownloadFile);
         }
 
         public void RequestSendFile(Guid sessionId, Guid privateAccessToken,
@@ -65,24 +52,24 @@ namespace ClientStore.Network
             _putQueue.Enqueue(request);
         }
 
-        public FileProgress RequestRetrieveFile(Guid sessionId, Guid privateAccessToken,
+        public void RequestRetrieveFile(Guid sessionId, Guid privateAccessToken,
             FileDescriptor fd, FileType fileType)
         {
             if (_fileIndex.FileExists(fd))
-                return _fileIndex.GetFileDownloadCompletion(fd);
+                return;
 
-            FileProgress fp = _fileIndex.CreateFileProgress(fd);
-            var request = new ExtendedFileGetRequest(sessionId, privateAccessToken, fd, fileType);
+            var request = new FileGetRequest(sessionId, privateAccessToken, fd, fileType);
             _getQueue.Enqueue(request);
-
-            return fp;
         }
 
         private async Task startSendFile(ExtendedFilePutRequest req)
         {
-            using (FileStream fs = _fileIndex.StreamCompletedFile(req.SessionId, req.File, req.FileType))
+            using (FileStream? fs = _fileIndex.StreamCompletedFile(req.SessionId, req.File, req.FileType))
             using (TcpClient tcpClient = new TcpClient())
             {
+                if (fs == null)
+                    throw new ArgumentException("File is not completed or does not exist");
+
                 await tcpClient.ConnectAsync(_host, _port);
 
                 using (TcpClientWrapper client = new TcpClientWrapper(tcpClient))
@@ -100,7 +87,7 @@ namespace ClientStore.Network
             }
         }
 
-        private async Task startDownloadFile(ExtendedFileGetRequest req)
+        private async Task startDownloadFile(FileGetRequest req)
         {
             if (_fileIndex.FileExists(req.File))
                 return;

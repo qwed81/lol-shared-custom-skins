@@ -13,10 +13,10 @@ namespace StoreModels.Messages.Client
 
         public FileType FileType { get; set; }
 
-        public ulong FileLength { get; set; }
+        public long FileLength { get; set; }
 
         public FilePutRequest(Guid sessionId, Guid privateAccessToken, FileDescriptor fd, FileType fileType, 
-            ulong fileLength) : base(RequestType.FILE_PUT, sessionId)
+            long fileLength) : base(RequestType.FILE_PUT, sessionId)
         {
             PrivateAccessToken = privateAccessToken;
             FileDescriptor = fd;

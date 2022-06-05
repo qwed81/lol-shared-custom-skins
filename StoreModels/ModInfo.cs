@@ -9,17 +9,20 @@ namespace StoreModels
     public class ModInfo
     {
 
-        public string Name { get; }
+        public string Name { get; set; }
 
-        public string Description { get; }
+        public string Description { get; set; }
 
-        public FileDescriptor ModFile { get; }
+        public FileDescriptor ModFile { get; set; }
 
-        public ModInfo(string name, string description, FileDescriptor modFile)
+        public Guid ModId { get; set; }
+
+        public ModInfo(string name, string description, FileDescriptor modFile, Guid modId)
         {
             Name = name;
             Description = description;
             ModFile = modFile;
+            ModId = modId;
         }
     }
 }

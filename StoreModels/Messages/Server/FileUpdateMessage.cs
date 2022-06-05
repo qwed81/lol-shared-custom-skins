@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace StoreModels.Messages.Shared
+namespace StoreModels.Messages.Server
 {
 
     public class FileUpdateMessage

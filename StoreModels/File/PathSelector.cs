@@ -20,13 +20,17 @@ namespace StoreModels.File
             _sessionSpecific = sessionSpecific;
         }
 
-        public string GetPath(Guid sessionId, FileDescriptor fd, FileType fileType)
+        public string GetPathPrefix(Guid sessionId, FileType fileType)
         {
             if (_sessionSpecific[fileType])
-                return Path.Combine(_root, "sessions", sessionId.ToString(),
-                    _pathNames[fileType], fd.ToString());
+                return Path.Combine(_root, "sessions", sessionId.ToString(), _pathNames[fileType]);
             else
-                return Path.Combine(_root, _pathNames[fileType], fd.ToString());
+                return Path.Combine(_root, _pathNames[fileType]);
+        }
+
+        public string GetPath(Guid sessionId, FileDescriptor fd, FileType fileType)
+        {
+            return Path.Combine(GetPathPrefix(sessionId, fileType), fd.ToString());
         }
 
         public string[] GetSessionPaths(Guid sessionId, FileType fileType)
