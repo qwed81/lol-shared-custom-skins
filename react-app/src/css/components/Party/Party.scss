@@ -1,0 +1,52 @@
+@import '../../abstracts/colors';
+@import '../../abstracts/sizes';
+@import '../../abstracts/fonts';
+
+.party-component {
+    background-color: $background;
+    border-right: 1px solid $light;
+
+    display: grid;
+    grid-template-rows: $menu-height 1fr auto;
+
+    .title-container {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        align-items: center;
+        border-bottom: 1px solid $light;
+    }
+
+    h2 {
+        margin-left: 15px;
+        color: $text-main;
+        font-family: $font-family-main;
+        font-size: 28px;
+    }
+
+    .create-invite {
+        background-color: $light;
+        border: 1px solid transparent;
+        border-radius: 10px;
+        font-size: 22px;
+        margin: 5px 20px;
+        color: $text-main;
+        cursor: pointer;
+
+        &:active {
+            border-bottom: 2px solid $darkest;
+            border-right: 2px solid $darkest;
+        }
+    }
+
+    .party-member-list { 
+        overflow-y: scroll;
+        
+        -ms-overflow-style: none;
+        &::-webkit-scrollbar {
+            display: none;
+            scrollbar-width: none;
+        }
+        
+    }
+
+}

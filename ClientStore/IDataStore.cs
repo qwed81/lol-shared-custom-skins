@@ -10,9 +10,9 @@ namespace ClientStore
     public interface IDataStore
     {
 
-        public SynchronizedCollection<User> UserList { get; }
+        public SynchronizedList<User> UserList { get; }
 
-        public SynchronizedCollection<Mod> ModList { get; }
+        public SynchronizedList<Mod> ModList { get; }
 
         public Task UpdateUserAsync(string username, string status, string pfpFilePath);
 

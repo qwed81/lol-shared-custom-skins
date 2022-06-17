@@ -9,19 +9,19 @@ namespace StoreModels
     public class UserInfo
     {
 
-        public string? Name { get; }
+        public string? Username { get; }
 
         public string? Status { get; }
 
-        public FileDescriptor? Image { get; }
+        public FileDescriptor? ProfilePicture { get; }
 
         public Guid UserId { get; }
 
         public UserInfo(string? name, string? status, FileDescriptor? image, Guid userId)
         {
-            Name = name;
+            Username = name;
             Status = status;
-            Image = image;
+            ProfilePicture = image;
             UserId = userId;
         }
 

@@ -1,0 +1,28 @@
+@import '../abstracts/colors';
+@import '../abstracts/sizes';
+
+.app-component {
+  display: grid;
+  grid-template-columns: $party-width 1fr;
+  grid-template-rows: $menu-height 1fr;
+  background-color: $background;
+  width: 100vw; 
+  height: 100vh;
+
+  .party-component {
+    grid-column: 1;
+    grid-row: 1;
+    grid-row: 1 / -1;
+  }
+
+  .menu-component {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .main-component {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+}

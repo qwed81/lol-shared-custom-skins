@@ -1,0 +1,113 @@
+@import '../abstracts/colors';
+@import '../abstracts/sizes';
+@import '../abstracts/fonts';
+
+.menu-component {
+    $line-gap: 18px;
+    $line-takeup: $line-gap * 2 + 1px;
+    $info-size: 30px;
+
+    background-color: $background;
+    display: grid;
+    grid-template-columns: auto $line-takeup auto $line-takeup 1fr $line-takeup auto $line-takeup auto;
+    border-bottom: 1px solid $light;
+    align-items: center;
+    justify-items: center;
+    padding: 8px 0px;
+
+    h2 {
+        margin-left: $line-gap;
+        color: $text-main;
+        font-family: $font-family-main;
+        font-size: 28px;
+    }
+
+    .line {
+        width: 1px;
+        background-color: $light;
+        height: 100%;
+    }
+
+    .button-container {
+        display: flex;
+        flex-direction: row;
+        margin: -5px;
+    }
+
+    .btn {
+        margin: 5px;
+        border: 1px solid transparent;
+        border-radius: 5px;
+        background-color: transparent;
+        cursor: pointer;
+        font-family: $font-family-main;
+        font-size: 18px;
+        letter-spacing: $letter-spacing-button;
+        color: $text-mid;
+        padding: 0px 5px;
+    
+        &:active {
+            border-bottom: 1px solid $darkest;
+            border-right: 1px solid $darkest; 
+        }
+    }
+
+    .btn.selected {
+        background-color: $d4;
+    }
+
+    .search {
+        width: 100%;
+        font-size: 22px;
+        color: $text-dark;
+        font-family: $font-family-main;
+        background-color: $darkest;
+        border: none;
+        padding: 5px;
+        border-radius: 5px;
+    }
+
+    .commit {
+        display: grid;
+        grid-template-columns: auto auto;
+        align-items: center;
+
+        p {
+            color: $text-dark;
+            font-family: $font-family-main;
+            font-size: 18px;
+            margin-right: 10px;
+            white-space: nowrap;
+        }
+
+        button {
+            letter-spacing: 0px;
+            color: $text-main;
+            background-color: $accent;
+            padding: 1px 6px;
+        }
+    }
+
+    .info {
+        background-image: url('../../assets/help.svg');
+        background-size: $info-size;
+        width: $info-size;
+        height: $info-size;
+        border: none;
+        background-color: transparent;
+        margin-right: $line-gap;
+        cursor: pointer;
+        opacity: .6;
+
+        &:hover {
+            opacity: .8;
+        }
+
+        &:active {
+            opacity: 1;
+        }
+    }
+
+}
+
+

@@ -33,16 +33,16 @@ namespace ClientStore.Network
         private string _host;
         private int _port;
         private FileIndex _fileIndex;
-        private NetworkQueue<ExtendedFilePutRequest> _putQueue;
-        private NetworkQueue<FileGetRequest> _getQueue;
+        private TaskQueue<ExtendedFilePutRequest> _putQueue;
+        private TaskQueue<FileGetRequest> _getQueue;
 
         public FileTransferer(string host, int port, FileIndex fileIndex)
         {
             _host = host;
             _port = port;
             _fileIndex = fileIndex;
-            _putQueue = new NetworkQueue<ExtendedFilePutRequest>(startSendFile);
-            _getQueue = new NetworkQueue<FileGetRequest>(startDownloadFile);
+            _putQueue = new TaskQueue<ExtendedFilePutRequest>(startSendFile);
+            _getQueue = new TaskQueue<FileGetRequest>(startDownloadFile);
         }
 
         public void RequestSendFile(Guid sessionId, Guid privateAccessToken,

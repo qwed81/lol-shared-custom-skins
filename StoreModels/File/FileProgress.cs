@@ -11,7 +11,7 @@ namespace StoreModels.File
 
         public double Progress { get; private set; }
 
-        public bool IsCompleted => Progress == 1;
+        public bool IsCompleted { get; private set; }
 
         public event Action<FileProgress>? ProgressChanged;
 
@@ -23,13 +23,23 @@ namespace StoreModels.File
 
         public void Report(double percentage)
         {
+            if (IsCompleted)
+                throw new InvalidOperationException("Can not report of a completed file");
+
             Progress = percentage;
             ProgressChanged?.Invoke(this);
+
+            if (Progress >= 1)
+            {
+                SetCompleted();
+            }
         }
 
         public void SetCompleted()
         {
             Progress = 1;
+            ProgressChanged = null;
+            IsCompleted = true;
         }
     }
 }

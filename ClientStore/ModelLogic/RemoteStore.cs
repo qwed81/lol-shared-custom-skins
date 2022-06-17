@@ -21,16 +21,16 @@ namespace ClientStore.ModelLogic
         private ClientMessageChanel? _messageChanel;
         private HashSet<FileDescriptor> _uploadedFiles;
 
-        public SynchronizedCollection<Mod> ModList { get; }
+        public SynchronizedList<Mod> ModList { get; }
 
-        public SynchronizedCollection<User> UserList { get; }
+        public SynchronizedList<User> UserList { get; }
 
         public RemoteStore(FileIndex fileIndex)
         {
             _fileIndex = fileIndex;
             _uploadedFiles = new HashSet<FileDescriptor>();
-            ModList = new SynchronizedCollection<Mod>();
-            UserList = new SynchronizedCollection<User>();
+            ModList = new SynchronizedList<Mod>();
+            UserList = new SynchronizedList<User>();
         }
 
         #region Connection
@@ -159,7 +159,7 @@ namespace ClientStore.ModelLogic
                 mods.Add(mod);
             }
 
-            ModList.ChangeCollection(mods);
+            ModList.TakeOwnershipOfCollection(mods);
         }
 
         private void handleUserListUpdate(UserListUpdateMessage message)
@@ -169,17 +169,17 @@ namespace ClientStore.ModelLogic
             {
                 IFileProgress? profilePicProgress = null;
                 string? filePath = null;
-                if(userInfo.Image != null)
+                if(userInfo.ProfilePicture != null)
                 {
-                    profilePicProgress = _fileIndex.GetFileDownloadProgress(userInfo.Image);
-                    filePath = _fileIndex.PathSelector.GetPath(_messageChanel!.SessionId, userInfo.Image, FileType.PROFILE_PICTURE);
+                    profilePicProgress = _fileIndex.GetFileDownloadProgress(userInfo.ProfilePicture);
+                    filePath = _fileIndex.PathSelector.GetPath(_messageChanel!.SessionId, userInfo.ProfilePicture, FileType.PROFILE_PICTURE);
                 }
                     
-                var user = new User(userInfo.Name, userInfo.Status, profilePicProgress, filePath);
+                var user = new User(userInfo.Username, userInfo.Status, profilePicProgress, filePath);
                 users.Add(user);
             }
 
-            UserList.ChangeCollection(users);
+            UserList.TakeOwnershipOfCollection(users);
         }
 
         private void handleFileUpdate(FileUpdateMessage message)

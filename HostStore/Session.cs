@@ -1,72 +1,122 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.Concurrent;
-using System.Text;
-using System.Threading.Tasks;
-using StoreModels;
-using StoreModels.Messages.Server;
+﻿using StoreModels;
 using StoreModels.Messages.Client;
-using System.Collections;
+using StoreModels.Messages.Server;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using System.Linq;
 
 namespace HostStore
 {
-
-    internal class Session : ISession
+    internal class Session : IMessageHandler, ISession, ISessionAuth, IFileCompletionHandler
     {
 
-        private ConcurrentDictionary<Guid, IAuthenticatedUser> _userMap;
-        
-        public event MessageHandler? OnMessage;
+        private IAuthenticationManager _authManager;
+        private MessageChanelGroup _chanelGroup;
+
+        public SynchronizedList<ServerUser> Users { get; }
+
+        public SynchronizedList<ModInfo> Mods { get; }
 
         public Guid SessionId { get; }
 
-        public PasswordManager PasswordManager { get; }
+        public bool CanUserReadFiles(Guid userPrivateKey) => _chanelGroup.UserIsAuthenticated(userPrivateKey);
 
-        public Session(Guid sessionId, PasswordManager passwordManager)
+        public bool CanUserWriteFiles(Guid userPrivateKey) => _chanelGroup.UserIsAuthenticated(userPrivateKey);
+
+        public Session(Guid sessionId, IAuthenticationManager authManager)
         {
-            _userMap = new ConcurrentDictionary<Guid, IAuthenticatedUser>();
             SessionId = sessionId;
-            PasswordManager = passwordManager;
+            _authManager = authManager;
+            _chanelGroup = new MessageChanelGroup(SessionId);
+
+            Users = new SynchronizedList<ServerUser>();
+            Mods = new SynchronizedList<ModInfo>();
         }
 
-        public bool UserIsAuthenticated(Guid userPrivateKey)
+        public async Task HandleChanelConnectionRequestAsync(TcpClientWrapper client, ConnectMessageChanelRequest req)
         {
-            return _userMap.ContainsKey(userPrivateKey);
+            await _chanelGroup.HandleChanelConnectionRequestAsync(client, _authManager, this, req);
         }
 
-        public void AddUser(IAuthenticatedUser user)
+        public void Close()
         {
-            _userMap[user.PrivateAccessKey] = user;
+            _chanelGroup.Close();
         }
 
-        public void RemoveUser(IAuthenticatedUser user)
+        private void sendUserList()
         {
-            _userMap.TryRemove(user.PrivateAccessKey, out _);
-        }
-
-        public void InvokeOnMessage(IAuthenticatedUser sender, Type messageType, object message)
-        {
-            OnMessage?.Invoke(this, sender, messageType, message);
-        }
-
-        public async Task PostMessageToAllAsync(Type messageType, object message)
-        {
-            List<Task> tasks = new List<Task>();
-            foreach(var user in _userMap.Values)
+            List<UserInfo> userInfos = new List<UserInfo>();
+            foreach(ServerUser user in Users)
             {
-                await user.PostMessageAsync(messageType, message);
+                var userInfo = new UserInfo(user.Username, user.Status, user.ProfilePicture, user.AuthUser.UserId);
+                userInfos.Add(userInfo);
             }
-            await Task.WhenAll(tasks);
+
+            var message = new UserListUpdateMessage(userInfos);
+            _chanelGroup.PostMessageToAll(typeof(UserListUpdateMessage), message);
         }
 
-        public IEnumerator<IAuthenticatedUser> GetEnumerator()
+        private void sendModList()
         {
-            return _userMap.Values.GetEnumerator();
+            List<ModInfo> modInfos = Mods.ToList();
+
+            var message = new ModListUpdateMessage(modInfos);
+            _chanelGroup.PostMessageToAll(typeof(ModListUpdateMessage), message);
         }
 
-        IEnumerator IEnumerable.GetEnumerator()
+        public void HandleMessage(IAuthenticatedUser user, Type messageType, object message)
         {
-            return _userMap.Values.GetEnumerator();
+            if(messageType == typeof(ModAddMessage))
+            {
+                handleModAddMessage((ModAddMessage)message);
+            }
+            else if (messageType == typeof(UserUpdateMessage))
+            {
+                handleUserUpdateMessage(user.UserId, (UserUpdateMessage)message);
+            }
+        }
+
+        private void handleModAddMessage(ModAddMessage message)
+        {
+            Mods.AddElement(message.ModInfo);
+            sendModList();
+        }
+
+        private void handleUserUpdateMessage(Guid userId, UserUpdateMessage message)
+        {
+            ServerUser? userUpdated = Users.Where((serverUser) => serverUser.AuthUser.UserId == userId).FirstOrDefault();
+            if(userUpdated != null)
+            {
+                var userInfo = message.User;
+                if (userInfo.Status != null)
+                    userUpdated.Status = userInfo.Status;
+                if (userInfo.Username != null)
+                    userUpdated.Username = userInfo.Username;
+                if (userInfo.ProfilePicture != null)
+                    userUpdated.ProfilePicture = userInfo.ProfilePicture;
+
+
+            }
+
+
+            
+
+        }
+
+        public void HandleUserAdded(IAuthenticatedUser user)
+        {
+
+        }
+
+        public void HandleUserRemoved(IAuthenticatedUser user)
+        {
+
+        }
+
+        public void HandleFileCompleted(FileDescriptor fd)
+        {
+            throw new NotImplementedException();
         }
     }
 }

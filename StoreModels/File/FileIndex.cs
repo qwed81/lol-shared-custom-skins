@@ -15,7 +15,29 @@ namespace StoreModels.File
         
         public PathSelector PathSelector { get; }
 
-        public FileIndex(PathSelector pathSelector)
+        public static FileIndex Init(Action<FileIndexInitOptions> options)
+        {
+            FileIndexInitOptions config = new FileIndexInitOptions();
+            options(config);
+
+            var pathNames = new Dictionary<FileType, string>()
+            {
+                [FileType.MOD_ZIP] = config.ModPath,
+                [FileType.PROFILE_PICTURE] = config.ProfilePicturePath
+            };
+
+            var sessionSpecific = new Dictionary<FileType, bool>()
+            {
+                [FileType.MOD_ZIP] = config.DeleteModsAfterClose,
+                [FileType.PROFILE_PICTURE] = config.DeleteProfilePicturesAfterClose
+            };
+
+            PathSelector pathSelector = new PathSelector(config.RootPath, pathNames, sessionSpecific);
+
+            return new FileIndex(pathSelector);
+        }
+
+        private FileIndex(PathSelector pathSelector)
         {
             _fileProgresses = new ConcurrentDictionary<FileDescriptor, FileProgress>();
             PathSelector = pathSelector;

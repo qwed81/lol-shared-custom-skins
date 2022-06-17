@@ -6,10 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Network\ConnectionManager.cs~RF6d58dfc.TMP" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\StoreModels\StoreModels.csproj" />
   </ItemGroup>
 
