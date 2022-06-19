@@ -2,3 +2,16 @@
 @import './abstracts/colors';
 @import './abstracts/fonts';
 @import './components/App.scss';
+
+:root {
+    color-scheme: dark;
+}
+
+body {
+    overflow: hidden;
+    background-color: $background;
+}
+
+* {
+    font-family: $font-family-main;
+}

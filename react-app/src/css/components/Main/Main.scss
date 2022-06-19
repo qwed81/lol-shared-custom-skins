@@ -1,0 +1,30 @@
+@import '../../abstracts/colors';
+
+$mod-size: 300px;
+$padding-main: 30px;
+
+.main-component {
+    background-color: transparent;
+    overflow-y: auto;
+}
+
+.mod-list {
+    padding-left: $padding-main;
+    display: inline-flex;
+    flex-wrap: wrap;
+    
+    .placeholder {
+        height: 0;
+        flex: 1 1 $mod-size;
+        margin-right: $padding-main;
+    }
+}
+
+.mod-container {
+    flex: 1 1 $mod-size;
+    margin-right: $padding-main;
+    margin-top: $padding-main;
+    
+    height: $mod-size;
+}
+

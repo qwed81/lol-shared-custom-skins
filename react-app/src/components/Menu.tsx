@@ -1,7 +1,10 @@
-import React from "react";
+import React, { useContext } from "react";
 import '../css/components/Menu.scss';
+import { FilterCatagory, FilterContext, IFilterContext } from "./FilterContext";
 
 export const Menu: React.FC = (): JSX.Element => {
+    let filterContext: IFilterContext = useContext(FilterContext);
+    
     return (<div className="menu-component">
        
         <h2>Mods</h2>
@@ -9,14 +12,25 @@ export const Menu: React.FC = (): JSX.Element => {
         <div className="line"></div>
 
         <div className="button-container">
-            <button className="btn selected">Active</button>
-            <button className="btn">Installed</button>
-            <button className="btn">All</button>
+            <button className={`btn ${filterContext.catagory == FilterCatagory.Active ? 'selected' : ''}`}  
+                onClick={() => filterContext.setCatagory(FilterCatagory.Active)}>
+                Active
+            </button>
+            
+            <button className={`btn ${filterContext.catagory == FilterCatagory.Installed ? 'selected' : ''}`} 
+                onClick={() => filterContext.setCatagory(FilterCatagory.Installed)}>
+                Installed
+            </button>
+            <button className={`btn ${filterContext.catagory == FilterCatagory.All ? 'selected' : ''}`}
+                onClick={() => filterContext.setCatagory(FilterCatagory.All)}>
+                All
+            </button>
         </div>
 
         <div className="line"></div>
 
-        <input className="search" placeholder="Search"/>
+        <input className="search" placeholder="Search" 
+            value={filterContext.search} onChange={e => filterContext.setSearch(e.target.value)}/>
 
         <div className="line"></div>
 

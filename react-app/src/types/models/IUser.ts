@@ -1,13 +1,17 @@
-export const enum Status {
+export const enum UserStatus {
 
-    Ok = 'Ok', Error = 'Error', Loading = 'Loading', Patching = 'Patching'
+    Ok = 'ok', Error = 'error', Loading = 'loading', Patching = 'patching'
 
+}
+
+export const enum UserRole {
+    Host, Admin, Member
 }
 
 export interface IUser {
 
     username: string;
-    status: Status;
+    status: UserStatus;
     imagePath: string;
     uniqueId: string;
 

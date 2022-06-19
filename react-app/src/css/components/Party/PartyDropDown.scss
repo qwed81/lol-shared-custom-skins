@@ -1,0 +1,39 @@
+@import '../../abstracts/colors';
+@import '../../abstracts/sizes';
+@import '../../abstracts/fonts';
+
+
+.party-drop-down-component {
+    background-color: $darkest;
+    position: absolute;
+    left: $party-width;
+
+    transform: translate(-1px); // connect to the menu so the mouse can hover without exit
+    display: grid;
+    grid-template-rows: 1fr 1fr 1fr 1fr;
+    height: $user-height * 2;
+
+    border: 1px solid $light;
+    border-left: 1px solid $d4;
+
+    button {
+        background-color: $d3;
+        font-family: $font-family-main;
+        font-size: 16px;
+        letter-spacing: $letter-spacing-button;
+        color: $text-mid;
+        padding: 0px 10px;
+        border: 1px solid transparent;
+        border-bottom: 1px solid $d4;
+        cursor: pointer;
+
+        &:hover {
+            background-color: $d4;
+        }
+
+        &:active {
+            border-right: 1px solid $background;
+            border-bottom: 1px solid $background;
+        }
+    }
+}

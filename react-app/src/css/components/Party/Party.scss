@@ -40,7 +40,9 @@
 
     .party-member-list { 
         overflow-y: scroll;
-        
+        height: fit-content;
+        max-height: 100%;
+
         -ms-overflow-style: none;
         &::-webkit-scrollbar {
             display: none;

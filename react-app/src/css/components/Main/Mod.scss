@@ -1,0 +1,83 @@
+@import '../../abstracts/colors';
+@import './Switch.scss';
+
+.mod-component {
+    height: 100%;
+    width: 100%;
+    overflow: clip;
+
+    display: grid;
+    grid-template-rows: 1fr auto;
+    background-color: $d3;
+    border: 1px solid $light;
+    border-radius: 5px;
+
+    .mod-picture {
+        width: 100%;
+        height: 100%;
+        background-size: 100%;
+        border-bottom: 1px solid $light;
+        cursor: pointer;
+    }
+
+    .mod-loading {
+        display: grid;
+        align-items: end;
+        justify-items: center;
+        grid-template-rows: 1.5fr auto auto 1fr;
+        width: 100%;
+        height: 100%;
+        background-color: $background;
+        border-bottom: 1px solid $light;
+
+        h1 {
+            margin-bottom: 5px;
+        }
+
+        .progress-bar-container {
+            width: 80%;
+            height: 8px;
+            border: 1px solid $light;
+        }
+
+        .progress-bar {
+            background-color: $d4;
+            height: 100%;
+        }
+
+        h2 {
+            margin-top: 5px;
+        }
+
+    }
+
+    .control {
+        $control-padding: 5px;
+
+        padding: $control-padding;
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+
+        h4 {
+            color: $text-mid;
+            font-size: 24px;
+        }
+
+        .divider {
+            margin: 2px $control-padding 2px $control-padding;
+            background-color: $light;
+            border: none;
+            width: 1px;
+        }
+
+        .active-container {
+            font-size: 14px;
+            color: $text-main;
+            display: grid;
+            align-items: center;
+            grid-template-columns: 1fr auto;
+        }
+
+    }
+}
+

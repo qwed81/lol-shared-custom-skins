@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom/client';
 import './css/index.scss';
 import App from './components/App';
 import reportWebVitals from './reportWebVitals';
-import { numberReducer } from './reducers/numberReducer';
 import { configureStore, ConfigureStoreOptions } from '@reduxjs/toolkit';
 
 const root = ReactDOM.createRoot(

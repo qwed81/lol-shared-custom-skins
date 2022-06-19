@@ -1,0 +1,64 @@
+@import '../../abstracts/colors';
+
+.mod-popup-component {
+    position: absolute;
+    width: 600px;
+    height: fit-content;
+    max-height: 80%;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    overflow: auto;
+
+    padding: 15px;
+
+    background-color: $background;
+    border-radius: 10px;
+
+    border: 1px solid $light;
+    z-index: 1000;
+
+    .mod-banner {
+        max-width: 100%;
+        border-radius: 5px;
+    }
+
+    .divider {
+        border: none;
+        height: 1px;
+        background-color: $light;
+        margin: 5px;
+    }
+
+    .text {
+        h1 {
+            font-size: 30px;
+            color: $text-main;
+        }
+
+        h2 {
+            font-size: 18px;
+            font-weight: normal;
+            color: $text-dark;
+        }
+
+        p {
+            font-size: 18px;
+            color: $text-mid;
+        }
+
+        padding: 5px;
+    }
+
+}
+
+.mod-popup-background {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-color: black;
+    z-index: 1000;
+    opacity: .3;
+}

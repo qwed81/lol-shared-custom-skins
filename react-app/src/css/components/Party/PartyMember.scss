@@ -34,14 +34,35 @@
             color: $text-mid;
         }
 
+        .status-text {
+            color: $text-dark;
+            font-size: 14px;
+            padding-left: 2px;
+        }
+
         .status {
             font-size: 14px;
-            color: $status-warning;
+        }
+
+        .error {
+            color: $status-error;
+        }
+
+        .ok {
+            color: $status-ok;
+        }
+
+        .patching {
+            color: status-patching;
+        }
+
+        .loading {
+            color: $status-loading;
         }
     }
 
-    &:hover {
+    &.selected {
         background-color: $d3;
+        transform: translate(2px);
     }
-
 }
