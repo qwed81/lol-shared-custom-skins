@@ -7,13 +7,10 @@ namespace Models.Network.Messages.Client
     public class ConnectionHeader
     {
 
-        public Guid SessionId { get; set; }
-
         public ConnectionType ConnectionType { get; set; }
 
-        public ConnectionHeader(Guid sessionId, ConnectionType connectionType)
+        public ConnectionHeader(ConnectionType connectionType)
         {
-            SessionId = sessionId;
             ConnectionType = connectionType;
         }
 

@@ -1,5 +1,4 @@
-﻿using Models.File;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,16 +13,19 @@ namespace Models.Network
 
         public string Description { get; set; }
 
-        public FileDescriptor ModFile { get; set; }
+        public string Author { get; set; }
 
-        public Guid ModId { get; set; }
+        public string ProviderName { get; set; }
 
-        public ModInfo(string name, string description, FileDescriptor modFile, Guid modId)
+        public string FileHash { get; set; }
+
+        public ModInfo(string name, string description, string author, string providerName, string fileHash)
         {
             Name = name;
             Description = description;
-            ModFile = modFile;
-            ModId = modId;
+            Author = author;
+            ProviderName = providerName;
+            FileHash = fileHash;
         }
     }
 }

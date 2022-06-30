@@ -6,25 +6,61 @@ $padding-main: 30px;
 .main-component {
     background-color: transparent;
     overflow-y: auto;
+
+    .no-mod-text {
+        text-align: center;
+        width: 100%;
+        height: 100%;
+        display: grid;
+        align-items: center;
+
+        h2 {
+            font-size: 30px;
+            color: $text-mid;
+        }
+
+        h3 {
+            font-size: 18px;
+            color: $text-dark
+        }
+
+    }
 }
 
-.mod-list {
+.main-component .mod-list {
     padding-left: $padding-main;
-    display: inline-flex;
+    display: flex;
     flex-wrap: wrap;
-    
+    padding-bottom: $padding-main;
+
+    .mod-container {
+        flex: 1 1 $mod-size;
+        margin-right: $padding-main;
+        margin-top: $padding-main;
+        
+        height: fit-content;
+        display: grid;
+    }
+
+    .mod-wrapper {
+        height: 100%;
+        width: 100%;
+        grid-row: 1;
+        grid-column: 1;
+    }
+
+    .height-setter {
+        grid-row: 1;
+        grid-column: 1;
+        padding-bottom: 100%; //calculated based on width, sets height of the grid        
+    }
+
     .placeholder {
         height: 0;
         flex: 1 1 $mod-size;
         margin-right: $padding-main;
     }
-}
 
-.mod-container {
-    flex: 1 1 $mod-size;
-    margin-right: $padding-main;
-    margin-top: $padding-main;
-    
-    height: $mod-size;
+
 }
 

@@ -1,10 +1,10 @@
 import React from "react";
 import '../../css/components/Party/PartyDropDown.scss';
-import { IUser } from "../../types/models/IUser";
+import { IPerson } from "../../Models";
 
 export interface IPartyDropDownProps {
     y: number;
-    selectedUser: IUser | null;
+    selectedUser: IPerson | null;
 }
 
 export const PartyDropDown = (props: IPartyDropDownProps): JSX.Element => {

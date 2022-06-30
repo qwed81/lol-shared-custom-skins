@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharedLib", "SharedLib\Shar
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HostLib", "HostLib\HostLib.csproj", "{622BA1CF-6AAE-487B-9B71-6F8DAAC2ACEC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SCSClient", "SCSClient\SCSClient.csproj", "{791909F1-C3F4-4C3C-A4A5-3ABA47FC049A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{622BA1CF-6AAE-487B-9B71-6F8DAAC2ACEC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{622BA1CF-6AAE-487B-9B71-6F8DAAC2ACEC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{622BA1CF-6AAE-487B-9B71-6F8DAAC2ACEC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{791909F1-C3F4-4C3C-A4A5-3ABA47FC049A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{791909F1-C3F4-4C3C-A4A5-3ABA47FC049A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{791909F1-C3F4-4C3C-A4A5-3ABA47FC049A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{791909F1-C3F4-4C3C-A4A5-3ABA47FC049A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

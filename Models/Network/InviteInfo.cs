@@ -26,8 +26,6 @@ namespace Models.Network
 
         public string PublicIP { get; }
 
-        public Guid SessionId { get; }
-
         public int Port { get; }
 
         public bool Admin { get; }
@@ -38,7 +36,6 @@ namespace Models.Network
             LocalIP = localIp;
             PublicIP = publicIp;
             Port = port;
-            SessionId = sessionId;
         }
 
         public static InviteInfo CreateInvite(Guid sessionId, string? password = null)

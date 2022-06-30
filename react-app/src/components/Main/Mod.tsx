@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useContext, useState } from "react";
 import '../../css/components/Main/Mod.scss'
-import { IMod } from "../../types/models/IMod";
-import { ModPopup } from "./ModPopup";
+import { IMod } from "../../Models";
+import { ClientContext, IClientContext } from "../ClientProvider/ClientContextProvider";
 
 export interface IModProps {
     mod: IMod;
@@ -9,6 +9,14 @@ export interface IModProps {
 }
 
 export const Mod = ({mod, modClicked}: IModProps): JSX.Element => {
+    let clientContext: IClientContext = useContext<IClientContext>(ClientContext);
+    let [localActive, setLocalActive] = useState(mod.active);
+
+    function changeActivation(value: boolean) {
+        setLocalActive(value);
+        setTimeout(() => {clientContext.changeActivation(mod.fileHash, value)}, 300);
+    }
+
     return (
         <div className="mod-component">
             <div className="picture-container">
@@ -34,11 +42,13 @@ export const Mod = ({mod, modClicked}: IModProps): JSX.Element => {
             </div>
 
             <div className="control">
-                <h4>Mod Name</h4>        
+                <h4>{mod.name}</h4>        
                 
                 <div className="active-container">
                     <label className="switch">
-                        <input type="checkbox" tabIndex={-1} disabled={mod.downloadingPercentage < 100}/>
+                        <input type="checkbox" tabIndex={-1} checked={localActive}
+                            onChange={(e) => changeActivation(e.target.checked)} 
+                            disabled={mod.downloadingPercentage < 100}/>
                         <span className="slider"/>
                     </label>
                 </div>

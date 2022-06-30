@@ -1,10 +1,10 @@
-import React, { useRef, useState } from "react";
+import React, { useContext, useRef, useState } from "react";
 import { PartyMember } from "./PartyMember";
 import '../../css/components/Party/Party.scss';
 import { User } from "./User";
 import { PartyDropDown } from "./PartyDropDown";
-import { IUser, UserStatus } from "../../types/models/IUser";
-import { users } from '../../test-data/users'
+import { IPerson } from "../../Models";
+import { ClientContext, IClientContext } from "../ClientProvider/ClientContextProvider";
 
 interface IUserHovered {
     userElementTop: number,
@@ -15,6 +15,7 @@ export const Party: React.FC = (): JSX.Element => {
     const listRef = useRef<HTMLDivElement>(null);
     const init = {userElementTop: 0, selectedUserId: null}
     let [selection, setSelection] = useState<IUserHovered>(init);
+    let clientContext: IClientContext = useContext<IClientContext>(ClientContext);
 
     function userMouseEnter(userElementTop: number, userId: string): void {
         let minTop: number | undefined = listRef.current?.getBoundingClientRect().top;
@@ -28,11 +29,11 @@ export const Party: React.FC = (): JSX.Element => {
         setSelection({...init, selectedUserId: null});
     }
 
-    function getSelectedUser(): IUser | null {
+    function getSelectedUser(): IPerson | null {
         if(selection.selectedUserId == null)
             return null;
         
-            return users.filter(user => user.uniqueId == selection.selectedUserId)[0];
+            return clientContext.partyMembers.filter(user => user.uniqueId == selection.selectedUserId)[0];
     }
 
     return (
@@ -43,9 +44,9 @@ export const Party: React.FC = (): JSX.Element => {
         </div>
         
         <div className="party-member-list" onScroll={deselectAll} onMouseLeave={deselectAll} ref={listRef}>
-            {users.map(user =>
-                <PartyMember key={user.uniqueId} user={user} 
-                 selected={selection.selectedUserId == user.uniqueId}
+            {clientContext.partyMembers.map(member =>
+                <PartyMember key={member.uniqueId} user={member} 
+                 selected={selection.selectedUserId == member.uniqueId}
                  userMouseEnter={userMouseEnter}/>)
                 }
             <PartyDropDown y={selection.userElementTop} selectedUser={getSelectedUser()}/>

@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDom from "react-dom";
 import '../../css/components/Main/ModPopup.scss'
-import { IMod } from "../../types/models/IMod";
+import { IMod } from "../../Models";
 
 export interface IModPopupProps {
     mod: IMod;
@@ -25,7 +25,8 @@ export const ModPopup = ({mod, open, closePopup}: IModPopupProps): JSX.Element |
             <div className="text">
                 <h1>{mod.name}</h1>
                 <h2>Author: {mod.author}</h2>
-                <h2>Provider: author</h2>
+                <h2>Provider: {mod.providerName}</h2>
+                <h2>MD5 Hash: {mod.fileHash}</h2>
                 <br/>
                 <p>{mod.description}</p>
             </div>

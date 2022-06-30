@@ -1,65 +1,14 @@
 @import '../../abstracts/colors';
 @import '../../abstracts/sizes';
 @import '../../abstracts/fonts';
+@import './Person.scss';
 
 .party-member-component {
+
     grid-row: 1;
     grid-column: 1;
-
-    display: grid;
-    grid-template-columns: auto 1fr auto auto;
-    align-items: center;
-    height: $user-height;
     border-bottom: 1px solid $d3;
-
-    .pfp {
-        grid-column: 1;
-        grid-row: 1;
-        height: $pfp-size;
-        width: $pfp-size;
-        margin: 10px;
-        background-size: $pfp-size;
-        border-radius: 50%;
-        grid-row: 1 / -1;
-    }
-
-    .text{
-        grid-column: 2;
-        grid-row: 1;
-        font-family: $font-family-main;
-
-        .username {
-            font-size: 18px;
-            font-weight: bold;
-            color: $text-mid;
-        }
-
-        .status-text {
-            color: $text-dark;
-            font-size: 14px;
-            padding-left: 2px;
-        }
-
-        .status {
-            font-size: 14px;
-        }
-
-        .error {
-            color: $status-error;
-        }
-
-        .ok {
-            color: $status-ok;
-        }
-
-        .patching {
-            color: status-patching;
-        }
-
-        .loading {
-            color: $status-loading;
-        }
-    }
+    grid-template-columns: auto 1fr auto auto;
 
     &.selected {
         background-color: $d3;

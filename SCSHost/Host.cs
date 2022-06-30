@@ -17,27 +17,28 @@ namespace SCSHost
     public class Host
     {
 
-        private readonly ConcurrentDictionary<Guid, Session> _sessions;
-
+        private PathSelector _pathSelector;
+        private HostState _state;
         private FileGetHandler _fileGetHandler;
         private FilePutHandler _filePutHandler;
         private MessageChanelHandler _messageChanelHandler;
         private ConnectionListener _connectionListener;
 
-        public Host()
+        public Host(PathSelector pathSelector)
         {
-            _sessions = new ConcurrentDictionary<Guid, Session>(); // sets up all dependencies
+            _pathSelector = pathSelector;
+            _state = new HostState();
 
-            _fileGetHandler = new FileGetHandler(_sessions, new HostFileSender());
-            _filePutHandler = new FilePutHandler(_sessions, new HostFileReciever());
-            _messageChanelHandler = new MessageChanelHandler(_sessions, new HostAuthenticator(), new HostMessageChanel());
+            _fileGetHandler = new FileGetHandler(_state, new HostFileSender(), _pathSelector);
+            _filePutHandler = new FilePutHandler(_state, new HostFileReciever(), _pathSelector);
+            _messageChanelHandler = new MessageChanelHandler(_state, new HostAuthenticator(), new HostMessageChanel());
 
             _connectionListener = new ConnectionListener();
         }
 
-        public async Task AcceptConnections(IPAddress localAddress)
+        public async Task AcceptConnections(IPAddress localAddress, int port = 0)
         {
-            TcpListener tcpListener = new TcpListener(localAddress, 0);
+            TcpListener tcpListener = new TcpListener(localAddress, port);
 
             while(true)
             {
@@ -47,14 +48,10 @@ namespace SCSHost
 
                 Task<IOErrorType> result = Task.Run(async () => 
                 {
-                    var sessionId = connectionResult.Value.SessionId;
-                    var connection = connectionResult.Value.Connection;
-
-                    if (_sessions.ContainsKey(sessionId) == false)
-                        return IOErrorType.NoSession;
+                    Connection? connection = connectionResult.Value;
 
                     IConnectionHandler handler = routeConnection(connection.ConnectionType);
-                    IOErrorType result = await handler.HandleConnection(sessionId, connection);
+                    IOErrorType result = await handler.HandleConnection(connection);
                     
                     connection.Dispose();
 

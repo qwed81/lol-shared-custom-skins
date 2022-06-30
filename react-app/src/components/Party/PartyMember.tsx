@@ -1,9 +1,9 @@
 import React, { MouseEventHandler, useRef } from "react";
 import '../../css/components/Party/PartyMember.scss';
-import { IUser, UserStatus } from "../../types/models/IUser";
+import { IPerson } from "../../Models";
 
 export interface IPartyMemberProps {
-    user: IUser;
+    user: IPerson;
     selected: boolean;
     userMouseEnter: (userElementTop: number, userId: string) => void;
 }
@@ -17,7 +17,7 @@ export const PartyMember = (props: IPartyMemberProps): JSX.Element => {
     }
 
     return (
-        <div className={`party-member-component ${props.selected ? 'selected' : ''}`} ref={elemRef}
+        <div className={`party-member-component person ${props.selected ? 'selected' : ''}`} ref={elemRef}
             onMouseEnter={handleMouseEnter}>
 
             <div className="pfp" style={{

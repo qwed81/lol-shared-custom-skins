@@ -19,7 +19,7 @@ export const Menu: React.FC = (): JSX.Element => {
             
             <button className={`btn ${filterContext.catagory == FilterCatagory.Installed ? 'selected' : ''}`} 
                 onClick={() => filterContext.setCatagory(FilterCatagory.Installed)}>
-                Installed
+                Inactive
             </button>
             <button className={`btn ${filterContext.catagory == FilterCatagory.All ? 'selected' : ''}`}
                 onClick={() => filterContext.setCatagory(FilterCatagory.All)}>

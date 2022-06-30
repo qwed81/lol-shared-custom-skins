@@ -1,5 +1,4 @@
-﻿using Models.File;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -10,17 +9,14 @@ namespace Models.Network.Messages.Client
 
         public Guid PrivateAccessToken { get; set; }
 
-        public FileDescriptor FileDescriptor { get; set; }
-
-        public FileType FileType { get; set; }
+        public string FileHash { get; set; }
 
         public long FileLength { get; set; }
 
-        public FilePutRequest(Guid privateAccessToken, FileDescriptor fd, FileType fileType, long fileLength)
+        public FilePutRequest(Guid privateAccessToken, string fileHash, long fileLength)
         {
             PrivateAccessToken = privateAccessToken;
-            FileDescriptor = fd;
-            FileType = fileType;
+            FileHash = fileHash;
             FileLength = fileLength;
         }
 

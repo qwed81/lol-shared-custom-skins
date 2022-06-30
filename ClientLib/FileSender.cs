@@ -17,7 +17,7 @@ namespace ClientLib
         public async Task<IOResult> RequestPutFile(AugmentedOutputStream output, ClientInfo clientInfo,
             FileDescriptor fd, FileType fileType, long fileLength)
         {
-            var request = new FilePutRequest(clientInfo.SessionId, clientInfo.PrivateAccessToken, fd, fileType, fileLength);
+            var request = new FilePutRequest(clientInfo.PrivateAccessToken, fd, fileType, fileLength);
             return await output.WriteObjectsAsync(request);
         }
 

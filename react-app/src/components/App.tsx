@@ -4,15 +4,18 @@ import { Menu } from './Menu';
 import { Main } from './Main/Main';
 import { Party } from './Party/PartyMain';
 import { FilterContextProvider } from './FilterContext';
+import { ClientContext, ClientContextProvider } from './ClientProvider/ClientContextProvider';
 
 const App = () => {
   return (
     <div className='app-component'>
-      <FilterContextProvider>
-        <Menu/>
-        <Party/>
-        <Main/>
-      </FilterContextProvider>
+      <ClientContextProvider>
+        <FilterContextProvider>
+          <Menu/>
+          <Party/>
+          <Main/>
+        </FilterContextProvider>
+      </ClientContextProvider>
     </div>
   );
 }

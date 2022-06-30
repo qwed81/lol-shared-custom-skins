@@ -23,10 +23,9 @@ namespace HostLib
             return IOResult.CreateSuccess(authData);
         }
 
-        public async Task<IOResult> SendAuthenticationResponse(AugmentedOutputStream output, Guid sessionId, 
-            Guid userId, Guid accessToken)
+        public async Task<IOResult> SendAuthenticationResponse(AugmentedOutputStream output, Guid userId, Guid accessToken)
         {
-            var response = new AuthenticateResponse(sessionId, userId, accessToken);
+            var response = new AuthenticateResponse(userId, accessToken);
             return await output.WriteObjectsAsync(response);
         }
 

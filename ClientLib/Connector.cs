@@ -1,4 +1,5 @@
-﻿using Models.Network;
+﻿using ClientLib.Models;
+using Models.Network;
 using Models.Network.Messages.Client;
 using SharedLib;
 using System;
@@ -13,7 +14,7 @@ namespace ClientLib
     public class Connector
     {
 
-        private async Task<IOResult<Connection>> connect(string host, int port, Guid sessionId, ConnectionType type)
+        private async Task<IOResult<Connection>> connect(string host, int port, ConnectionType type)
         {
             TcpClient client = new TcpClient(host, port);
             try
@@ -25,7 +26,7 @@ namespace ClientLib
                 return IOResult.CreateFailure<Connection>(IOErrorType.IOError);
             }
 
-            var header = new ConnectionHeader(sessionId, type);
+            var header = new ConnectionHeader(type);
             var output = new AugmentedOutputStream(client.GetStream());
             var result = await output.WriteObjectsAsync(header);
             if (result.Failed)
@@ -36,19 +37,19 @@ namespace ClientLib
             return IOResult.CreateSuccess(connection);
         }
 
-        public Task<IOResult<Connection>> ConnectMessageChanel(string host, int port, Guid sessionId)
+        public Task<IOResult<Connection>> ConnectMessageChanel(string host, int port)
         {
-            return connect(host, port, sessionId, ConnectionType.MessageChanel);
+            return connect(host, port, ConnectionType.MessageChanel);
         }
 
-        public Task<IOResult<Connection>> ConnectFilePut(string host, int port, Guid sessionId)
+        public Task<IOResult<Connection>> ConnectFilePut(string host, int port)
         {
-            return connect(host, port, sessionId, ConnectionType.FilePut);
+            return connect(host, port, ConnectionType.FilePut);
         }
 
-        public Task<IOResult<Connection>> ConnectFileGet(string host, int port, Guid sessionId)
+        public Task<IOResult<Connection>> ConnectFileGet(string host, int port)
         {
-            return connect(host, port, sessionId, ConnectionType.FileGet);
+            return connect(host, port, ConnectionType.FileGet);
         }
 
     }

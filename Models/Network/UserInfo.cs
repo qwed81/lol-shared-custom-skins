@@ -1,5 +1,4 @@
-﻿using Models.File;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,15 +13,15 @@ namespace Models.Network
 
         public string? Status { get; set; }
 
-        public FileDescriptor? ProfilePicture { get; set; }
+        public string? ImagePath { get; set; }
 
         public Guid UserId { get; set; }
 
-        public UserInfo(string? name, string? status, FileDescriptor? image, Guid userId)
+        public UserInfo(string? name, string? status, string? imagePath, Guid userId)
         {
             Username = name;
             Status = status;
-            ProfilePicture = image;
+            ImagePath = imagePath;
             UserId = userId;
         }
 

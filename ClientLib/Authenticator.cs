@@ -13,10 +13,10 @@ namespace ClientLib
     public class Authenticator
     {
 
-        public async Task<IOResult> SendAuthenticationRequest(AugmentedOutputStream output, Guid sessionId,
+        public async Task<IOResult> SendAuthenticationRequest(AugmentedOutputStream output,
             string password, bool admin)
         {
-            var request = new AuthenticateRequest(sessionId, admin, password);
+            var request = new AuthenticateRequest(admin, password);
             return await output.WriteObjectsAsync(request);
         }
 
@@ -27,7 +27,7 @@ namespace ClientLib
                 return IOResult.CreateFailure<ClientInfo>(responseResult.ErrorType);
 
             var response = responseResult.Value;
-            var clientInfo = new ClientInfo(response.SessionId, response.UserId, response.PrivateAccessToken);
+            var clientInfo = new ClientInfo(response.UserId, response.PrivateAccessToken);
             
             return IOResult.CreateSuccess(clientInfo);
         }

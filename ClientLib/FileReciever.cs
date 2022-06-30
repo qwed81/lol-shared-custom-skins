@@ -17,7 +17,7 @@ namespace ClientLib
         public async Task<IOResult> RequestGetFile(AugmentedOutputStream output, ClientInfo clientInfo,
             FileDescriptor fd, FileType fileType)
         {
-            var request = new FileGetRequest(clientInfo.SessionId, clientInfo.PrivateAccessToken, fd, fileType);
+            var request = new FileGetRequest(clientInfo.PrivateAccessToken, fd, fileType);
             return await output.WriteObjectsAsync(request);
         }
 

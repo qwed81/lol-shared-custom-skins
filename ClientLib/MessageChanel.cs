@@ -13,7 +13,7 @@ namespace ClientLib
     public class MessageChanel
     {
 
-        private async Task<IOResult> sendMessage(AugmentedOutputStream output, Type type, object message)
+        public async Task<IOResult> SendMessage(AugmentedOutputStream output, Type type, object message)
         {
             string typeString = type.FullName;
             var metadata = new ClientMessageMetadata(typeString);
@@ -21,34 +21,22 @@ namespace ClientLib
             return await output.WriteObjectsAsync(metadata, message);
         }
 
-        public async Task<IOResult> SendModAdd(AugmentedOutputStream output, ModInfo mod)
-        {
-            var message = new ModAddMessage(mod);
-            return await sendMessage(output, typeof(ModAddMessage), message);
-        }
-
-        public async Task<IOResult> SendUserInfoUpdate(AugmentedOutputStream output, UserInfo user)
-        {
-            var message = new UserUpdateMessage(user);
-            return await sendMessage(output, typeof(UserUpdateMessage), message);
-        }
-
-        public async Task<IOResult<MessageTypePair>> RecieveMessage(AugmentedInputStream input)
+        public async Task<IOResult<TypeMessagePair>> RecieveMessage(AugmentedInputStream input)
         {
             var metadataResult = await input.ReadObjectAsync<ServerMessageMetadata>();
             if (metadataResult.Failed)
-                return IOResult.CreateFailure<MessageTypePair>(metadataResult.ErrorType);
+                return IOResult.CreateFailure<TypeMessagePair>(metadataResult.ErrorType);
 
             string typeString = metadataResult.Value.MessageType;
             Type? type = Type.GetType(typeString);
             if (type == null)
-                return IOResult.CreateFailure<MessageTypePair>(IOErrorType.ImproperFormat);
+                return IOResult.CreateFailure<TypeMessagePair>(IOErrorType.ImproperFormat);
 
             var messageResult = await input.ReadObjectAsync<object>(type);
             if(messageResult.Failed)
-                return IOResult.CreateFailure<MessageTypePair>(messageResult.ErrorType);
+                return IOResult.CreateFailure<TypeMessagePair>(messageResult.ErrorType);
 
-            var messageTypePair = new MessageTypePair(type, messageResult.Value);
+            var messageTypePair = new TypeMessagePair(type, messageResult.Value);
 
             return IOResult.CreateSuccess(messageTypePair);
         }

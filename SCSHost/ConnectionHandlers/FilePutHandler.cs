@@ -1,6 +1,8 @@
 ﻿using HostLib;
 using HostLib.Models;
+using Models.Network;
 using Models.Network.Messages.Client;
+using Models.Network.Messages.Server;
 using SharedLib;
 using System;
 using System.Collections.Concurrent;
@@ -14,66 +16,58 @@ namespace SCSHost.ConnectionHandlers
     public class FilePutHandler : IConnectionHandler
     {
 
-        private ConcurrentDictionary<Guid, Session> _sessions;
         private HostFileReciever _fileReciever;
         private PathSelector _pathSelector;
-        private FileIndex _fileIndex;
+        private HostState _state;
 
-        public FilePutHandler(ConcurrentDictionary<Guid, Session> sessions, HostFileReciever fileReciever,
-            PathSelector pathSelector, FileIndex fileIndex)
+        public FilePutHandler(HostState state, HostFileReciever fileReciever, PathSelector pathSelector)
         {
-            _sessions = sessions;
+            _state = state;
             _fileReciever = fileReciever;
             _pathSelector = pathSelector;
-            _fileIndex = fileIndex;
         }
 
-        public async Task<IOErrorType> HandleConnection(Guid sessionId, Connection connection)
+        public async Task<IOErrorType> HandleConnection(Connection connection)
         {
             var fileRequestResult = await _fileReciever.ReadFilePutRequest(connection.Input);
             if (fileRequestResult.Failed)
                 return fileRequestResult.ErrorType;
 
             FilePutRequest fileRequest = fileRequestResult.Value;
+            string fileHash = fileRequest.FileHash;
 
-            lock (_sessions[sessionId].SessionLock) // makes sure user is authenticated to get file
-            {
-                var t = _sessions[sessionId].Connections.Where(c => c.PrivateAccessToken == fileRequest.PrivateAccessToken);
-                if (t.Count() == 0)
-                    return IOErrorType.NotAuthenticated;
-            }
+            if (_state.GetExistingMessageChanel(fileRequest.PrivateAccessToken) == null)
+                return IOErrorType.NotAuthenticated;
 
-            if(_fileIndex.FileExists(fileRequest.FileDescriptor, fileRequest.FileType) == true)
-            {
-                var responseResult = await _fileReciever.SendFilePutResponse(connection.Output, false);
+            if (_state.ModExists(fileHash)) // don't put mod, already has
+                return IOErrorType.None;
+
+            if (_pathSelector.FileExists(fileHash)) // file already there, currently being uploaded
+                return IOErrorType.FileError;
+
+            var responseResult = await _fileReciever.SendFilePutResponse(connection.Output, true);
+            if (responseResult.Failed)
                 return responseResult.ErrorType;
-            }
-            _fileIndex.AddFile(fileRequest.FileDescriptor, fileRequest.FileType);
 
-            string path = _pathSelector.GetPath(sessionId, fileRequest.FileDescriptor, fileRequest.FileType);
-            try
+            using (FileStream fs = _pathSelector.CreateFile(fileHash))
             {
-                using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None))
+                IOResult downloadResult = await _fileReciever.DownloadFile(connection.Input, fs, fileRequest.FileLength, new Progress<double>());
+
+                if (downloadResult.Failed)
                 {
-                    var responseResult = await _fileReciever.SendFilePutResponse(connection.Output, true);
-                    if (responseResult.Failed)
-                        return responseResult.ErrorType;
-
-                    var fileRecieveResult = await _fileReciever.DownloadFile(connection.Input, fs, fs.Length, new Progress<double>());
-
-                    if(fileRecieveResult.Failed == false)
-                    {
-                        _fileIndex.SetFileCompleted(fileRequest.FileDescriptor, fileRequest.FileType);
-                    }
-
-                    return fileRecieveResult.ErrorType;
+                    _pathSelector.RemoveFile(fileHash);
+                    return downloadResult.ErrorType;
                 }
             }
-            catch (IOException)
-            {
-                return IOErrorType.FileError;
-            }
 
+            // let the state know this file has been downloaded successfully
+            _state.CompletedFiles[fileHash] = true;
+
+            var message = new FileReadyMessage(fileHash);
+            var pair = new TypeMessagePair(typeof(FileReadyMessage), message);
+            _state.OutboundMessages.Add(pair);
+
+            return IOErrorType.None;
         }
     }
 }

@@ -2,6 +2,7 @@
 using HostLib.Models;
 using Models.Network;
 using Models.Network.Messages.Client;
+using Models.Network.Messages.Server;
 using SharedLib;
 using System;
 using System.Collections.Concurrent;
@@ -15,128 +16,130 @@ namespace SCSHost.ConnectionHandlers
     public class MessageChanelHandler : IConnectionHandler
     {
 
-        private ConcurrentDictionary<Guid, Session> _sessions;
+        private HostState _state;
         private HostAuthenticator _authenticator;
         private HostMessageChanel _messageChanel;
 
-        public MessageChanelHandler(ConcurrentDictionary<Guid, Session> sessions, 
-            HostAuthenticator authenticator, HostMessageChanel messageChanel)
+        public MessageChanelHandler(HostState state, HostAuthenticator authenticator, HostMessageChanel messageChanel)
         {
-            _sessions = sessions;
+            _state = state;
             _authenticator = authenticator;
             _messageChanel = messageChanel;
         }
 
-        public async Task<IOErrorType> HandleConnection(Guid sessionId, Connection connection)
+        public async Task<IOErrorType> HandleConnection(Connection connection)
         {
-            // authenticate
-            var authResult = await _authenticator.RecieveAuthenticationRequest(connection.Input);
+            var authResult = await authenticate(connection);
             if (authResult.Failed)
                 return authResult.ErrorType;
 
-            string password = authResult.Value.Password;
-
-            if (_sessions[sessionId].PasswordBag.PasswordExists(password) == false)
-                return IOErrorType.NotAuthenticated;
-
-            _sessions[sessionId].PasswordBag.RemovePassword(password);
-
-            Guid userId = Guid.NewGuid();
-            Guid privateAccessToken = Guid.NewGuid();
-            ConnectionIdPair connectionPair = new ConnectionIdPair(connection, userId, privateAccessToken);
-
-            var authSendResult = await _authenticator.SendAuthenticationResponse(connection.Output, sessionId, userId, privateAccessToken);
-            if (authSendResult.Failed)
-                return authSendResult.ErrorType;
-
-            addToSession(sessionId, connectionPair);
-
+            addUser(authResult.Value);
             while (true) // handle messages
             {
                 var messageResult = await _messageChanel.RecieveMessage(connection.Input);
                 if (messageResult.Failed) // closed client side
                 {
-                    removeFromSession(sessionId, connectionPair);
+                    removeUser(authResult.Value);
                     return messageResult.ErrorType;
                 }
 
                 var messagePair = messageResult.Value;
-                handleMessage(sessionId, connectionPair, messagePair.MessageType, messagePair.Message);
+                handleMessage(authResult.Value, messagePair);
             }
 
         }
 
-        private IEnumerable<AugmentedOutputStream> getOutputs(Guid sessionId)
+        private async Task<IOResult<AuthenticatedConnection>> authenticate(Connection connection)
         {
-            List<AugmentedOutputStream> streams = new List<AugmentedOutputStream>();
-            foreach (var connection in _sessions[sessionId].Connections)
-                streams.Add(connection.Connection.Output);
-            return streams;
+            var authResult = await _authenticator.RecieveAuthenticationRequest(connection.Input);
+            if (authResult.Failed)
+                return IOResult.CreateFailure<AuthenticatedConnection>(authResult.ErrorType);
+
+            string password = authResult.Value.Password;
+            if (_state.PasswordBag.PasswordExists(password) == false)
+                return IOResult.CreateFailure<AuthenticatedConnection>(authResult.ErrorType);
+
+            _state.PasswordBag.RemovePassword(password);
+
+            Guid userId = Guid.NewGuid();
+            Guid privateAccessToken = Guid.NewGuid();
+
+            var authSendResult = await _authenticator.SendAuthenticationResponse(connection.Output, userId, privateAccessToken);
+            if (authSendResult.Failed)
+                return IOResult.CreateFailure<AuthenticatedConnection>(authResult.ErrorType);
+
+            var authConnection = new AuthenticatedConnection(userId, privateAccessToken, connection);
+
+            return IOResult.CreateSuccess(authConnection);
         }
 
-        private void handleMessage(Guid sessionId, ConnectionIdPair connection, Type messageType, object message)
+        private void handleMessage(AuthenticatedConnection connection, TypeMessagePair pair)
         {
-            if (messageType == typeof(ModAddMessage))
-                handleModAddMessage(sessionId, (ModAddMessage)message);
-            else if (messageType == typeof(UserUpdateMessage))
-                handleUserUpdateMessage(sessionId, connection, (UserUpdateMessage)message);
+            if (pair.MessageType == typeof(ModActivationMessage))
+                handleModAddMessage(connection, (ModActivationMessage)pair.Message);
+            else if (pair.MessageType == typeof(UserUpdateMessage))
+                handleUserUpdateMessage(connection, (UserUpdateMessage)pair.Message);
         }
 
-        private void handleModAddMessage(Guid sessionId, ModAddMessage message)
+        private void postModListUpdateMessage()
         {
+            var message = new ModListUpdateMessage(_state.Mods.Copy());
+            var messageTypePair = new TypeMessagePair(typeof(ModListUpdateMessage), message);
+            _state.OutboundMessages.Add(messageTypePair);
+        }
 
-            lock (_sessions[sessionId].SessionLock)
+        private void postUserListUpdateMessage()
+        {
+            var message = new UserListUpdateMessage(_state.Users.Copy());
+            var messageTypePair = new TypeMessagePair(typeof(UserListUpdateMessage), message);
+            _state.OutboundMessages.Add(messageTypePair);
+        }
+
+        private void handleModAddMessage(AuthenticatedConnection connection, ModActivationMessage message)
+        {
+            _state.Mods.Add(message.ModInfo);
+            postModListUpdateMessage();
+        }
+
+        private void handleUserUpdateMessage(AuthenticatedConnection connection, UserUpdateMessage message)
+        {
+            _state.Users.ForEach((user, index) =>
             {
-                _sessions[sessionId].Mods.Add(message.ModInfo);
-
-                var outputs = getOutputs(sessionId);
-                var modList = _sessions[sessionId].Mods.ToList(); // in lock in case of change
-
-                _messageChanel.SendModListUpdateToAll(outputs, modList).Wait();
-            }
-        }
-
-        private void handleUserUpdateMessage(Guid sessionId, ConnectionIdPair connection, UserUpdateMessage message)
-        {
-            lock(_sessions[sessionId].SessionLock)
-            {
-                UserInfo? user = _sessions[sessionId].Users.Where(user => user.UserId == connection.UserId).FirstOrDefault();
-
-                if (user == null) // user no longer in the list
+                if (user.UserId != connection.UserId)
                     return;
 
                 user.Status = message.User.Status;
                 user.Username = message.User.Username;
-                user.ProfilePicture = message.User.ProfilePicture;
+                user.ImagePath = message.User.ImagePath;
+            });
 
-                _messageChanel.SendUserListUpdateToAll(getOutputs(sessionId), _sessions[sessionId].Users);
-            }
+            postUserListUpdateMessage();
         }
 
-        private void addToSession(Guid sessionId, ConnectionIdPair connection)
+        private void addUser(AuthenticatedConnection connection)
         {
-            lock(_sessions[sessionId].SessionLock)
-            {
-                _sessions[sessionId].Connections.Add(connection);
+            _state.Connections.Add(connection);
 
-                UserInfo defaultUser = new UserInfo(null, null, null, connection.UserId);
-                _sessions[sessionId].Users.Add(defaultUser);
-
-                _messageChanel.SendUserListUpdateToAll(getOutputs(sessionId), _sessions[sessionId].Users);
-            }
+            UserInfo defaultUser = new UserInfo(null, null, null, connection.UserId);
+            _state.Users.Add(defaultUser);
+            postUserListUpdateMessage();
         }
 
-        private void removeFromSession(Guid sessionId, ConnectionIdPair connection)
+        private void removeUser(AuthenticatedConnection removeConnection)
         {
-            lock (_sessions[sessionId].SessionLock)
+            _state.Connections.ForEach((connection, index) =>// Ok to iterate forwards because only 1 connection removed
             {
-                _sessions[sessionId].Connections.Remove(connection);
+                if (removeConnection.UserId == connection.UserId)
+                    _state.Connections.RemoveAt(index);
+            });
 
-                UserInfo user = _sessions[sessionId].Users.Where(user => user.UserId == connection.UserId).First();
-                _sessions[sessionId].Users.Remove(user);
+            _state.Users.ForEach((user, index) =>
+            {
+                if (removeConnection.UserId == user.UserId)
+                    _state.Users.RemoveAt(index);
+            });
 
-                _messageChanel.SendUserListUpdateToAll(getOutputs(sessionId), _sessions[sessionId].Users);
-            }
+            postUserListUpdateMessage();
         }
 
 

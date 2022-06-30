@@ -1,5 +1,4 @@
-﻿using Models.File;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,14 +10,11 @@ namespace Models.Network.Messages.Server
     public class FileReadyMessage
     {
 
-        public FileType FileType { get; set; }
+        public string FileHash { get; set; }
 
-        public FileDescriptor FileDescriptor { get; set; }
-
-        public FileReadyMessage(FileDescriptor fileDescriptor, FileType fileType)
+        public FileReadyMessage(string fileHash)
         {
-            FileDescriptor = fileDescriptor;
-            FileType = fileType;
+            FileHash = fileHash;
         }
 
     }

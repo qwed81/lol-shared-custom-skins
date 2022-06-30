@@ -1,22 +1,26 @@
-import React from "react";
+import React, { useContext } from "react";
 import '../../css/components/Party/User.scss';
-
-const bgiStr = 'url("https://bandlabimages.azureedge.net/v1.0/users/11f301f4-ea39-4ed2-9898-caad91981ab7/640x640")';
+import { ClientContext, IClientContext } from "../ClientProvider/ClientContextProvider";
 
 export const User: React.FC = (): JSX.Element => {
-    return ( <div className="user-component">
+    let clientContext: IClientContext = useContext<IClientContext>(ClientContext);
+    
+    return ( <div className="user-component person">
         <div className="pfp" style={
-            {backgroundImage: bgiStr,
+            {backgroundImage: clientContext.user?.imagePath,
         }}>
         </div>
 
         <div className="text">
             <p className="username">
-                Username
+                {clientContext.user?.username}
             </p>
 
-            <p className="status">
-                LOADING
+            <p className="status-text">
+                status:&nbsp;
+                <span className={'status ' + clientContext.user?.status}>
+                    {clientContext.user?.status}
+                </span>
             </p>
         </div>
 

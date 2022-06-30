@@ -13,7 +13,7 @@ namespace HostLib
     public class ConnectionListener
     {
 
-        public async Task<IOResult<SessionConnectionPair>> ListenForConnection(TcpListener listener)
+        public async Task<IOResult<Connection>> ListenForConnection(TcpListener listener)
         {
             TcpClient client;
             try
@@ -22,21 +22,20 @@ namespace HostLib
             }
             catch (IOException)
             {
-                return IOResult.CreateFailure<SessionConnectionPair>(IOErrorType.IOError);
+                return IOResult.CreateFailure<Connection>(IOErrorType.IOError);
             }
 
             var input = new AugmentedInputStream(client.GetStream());
             var connectionHeaderResult = await input.ReadObjectAsync<ConnectionHeader>();
             if (connectionHeaderResult.Failed)
-                return IOResult.CreateFailure<SessionConnectionPair>(connectionHeaderResult.ErrorType);
+                return IOResult.CreateFailure<Connection>(connectionHeaderResult.ErrorType);
 
             var connectionType = connectionHeaderResult.Value.ConnectionType;
             var output = new AugmentedOutputStream(client.GetStream());
 
             var connection = new Connection(connectionType, client, input, output);
-            var pair = new SessionConnectionPair(connectionHeaderResult.Value.SessionId, connection);
 
-            return IOResult.CreateSuccess(pair);
+            return IOResult.CreateSuccess(connection);
         } 
 
     }

@@ -1,4 +1,6 @@
-﻿using SharedLib;
+﻿using HostLib;
+using HostLib.Models;
+using SharedLib;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -11,7 +13,7 @@ namespace SCSHost.ConnectionHandlers
     public interface IConnectionHandler
     {
 
-        public Task<IOErrorType> HandleConnection(Guid sessionId, Connection connection); 
+        public Task<IOErrorType> HandleConnection(Connection connection); 
 
     }
 }
